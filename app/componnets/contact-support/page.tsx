@@ -2,204 +2,124 @@
 
 import React from "react";
 import Image from "next/image";
-import { FaUser } from "react-icons/fa";
-import { FaEarListen } from "react-icons/fa6";
+import { FaPhone, FaEnvelope, FaHeadset } from "react-icons/fa";
+import { FaLocationDot } from "react-icons/fa6";
+import { useRouter } from "next/navigation";
 
 const ContactSupport = () => {
+    const router = useRouter();
+
     return (
-        <div className="min-h-screen flex ">
-            {/* LEFT IMAGE */}
-            <div className="hidden md:flex relative w-[864px] h-[864px] top-[59px] left-[51px] opacity-100">
+        <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#F3F6F9] overflow-hidden">
+            {/* LEFT IMAGE - hidden on mobile, visible on md+ */}
+            <div className="hidden md:flex relative md:w-[50%] lg:w-[55%] md:my-[30px] md:ml-[30px] lg:my-[40px] lg:ml-[40px] flex-shrink-0 min-h-[400px]">
                 <Image
                     src="/images/contact.png"
                     alt="Contact Image"
                     fill
-                    className="rounded-lg"
-                    style={{ transform: 'rotate(0deg)' }}
+                    className="object-contain rounded-2xl"
+                    priority
                 />
             </div>
 
-            {/* RIGHT FORM - EXACT LAYOUT DIMENSIONS */}
-            <div className="flex-1 flex justify-center items-start relative">
-                <div
-                    className="relative  shadow-lg flex flex-col items-center"
-                    style={{
-                        width: '448.32574462890625px',
-                        height: '673.9255981445312px',
-                        top: '154px',
-                        opacity: 1
-                    }}
-                >
-                    <form className="w-full h-full relative flex flex-col items-center">
-                        {/* LOGO */}
-                        <div className="absolute w-24 h-24" style={{ top: '32px' }}>
-                            <Image
-                                src="/images/DHA logo.png"
-                                alt="Logo"
-                                width={96}
-                                height={96}
-                                className="object-contain"
-                            />
-                        </div>
+            {/* MOBILE TOP IMAGE - only visible on small screens */}
+            <div className="md:hidden relative w-full h-[280px] flex-shrink-0 my-[20px] mr-[20px]">
+                <Image
+                    src="/images/contact.png"
+                    alt="Contact Image"
+                    fill
+                    className="object-contain rounded-sm"
+                    priority
+                />
+            </div>
 
-                        {/* HEADINGS */}
-                        <div className="absolute text-center" style={{ top: '140px' }}>
-                            <h1 className="text-[18px] font-inter font-semibold tracking-[0.02em] leading-tight">
-                                Welcome to DHA Karachi
-                            </h1>
-                            <p className="text-[16px] font-inter tracking-[0.02em] leading-tight">
-                                Smart Society · Home for Defenders
-                            </p>
-                        </div>
+            {/* RIGHT FORM */}
+            <div className="flex-1 flex justify-center items-center py-8 px-4 md:py-0">
+                <div className="flex flex-col items-center w-full max-w-[420px] sm:max-w-[380px] md:max-w-[420px] sm:max-h-[600px]">
 
-                        {/* SIGN IN TEXT */}
-                        <h2
-                            className="absolute text-[18px] font-inter font-semibold leading-[22px] opacity-100"
-                            style={{
-                                width: '59px',
-                                height: '22px',
-                                top: '203.43px',
-                                left: '44px'
-                            }}
-                        >
-                            Sign In
+                    {/* LOGO */}
+                    <div className="mb-2 sm:mb-2 md:mb-3">
+                        <Image
+                            src="/images/DHA logo.png"
+                            alt="Logo"
+                            width={88}
+                            height={88}
+                            className="object-contain w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] md:w-[80px] md:h-[80px] lg:w-[88px] lg:h-[88px]"
+                        />
+                    </div>
+
+                    {/* HEADINGS */}
+                    <div className="text-center mb-4 sm:mb-4 md:mb-6">
+                        <h1 className="text-[15px] sm:text-[16px] md:text-[18px] font-semibold tracking-wide font-[inter] mb-1">
+                            Welcome to DHA Karachi
+                        </h1>
+                        <p className="text-[12px] sm:text-[13px] md:text-[14px] font-normal font-[inter] text-[#A5A5A5] tracking-wide">
+                            Smart Society · Home for Defenders
+                        </p>
+                    </div>
+
+                    {/* FORM */}
+                    <div className="w-full px-1 sm:px-0">
+
+                        {/* CONTACT SUPPORT HEADER */}
+                        <h2 className="text-[18px] sm:text-[20px] md:text-[22px] font-semibold font-[inter] mb-4 md:mb-5">
+                            Contact Support
                         </h2>
 
-                        {/* CNIC */}
-                        <div
-                            className="absolute bg-white shadow-md p-3 flex flex-col justify-center"
-                            style={{
-                                width: '361.151px',
-                                height: '62.267px',
-                                top: '242.77px',
-                                left: '44px',
-                                borderRadius: '9.96px'
-                            }}
-                        >
-                            <span className="text-[#30B33D] text-xs font-medium">CNIC</span>
-                            <input
-                                type="text"
-                                placeholder="CNIC (e.g. 420401-8732608-7)"
-                                className="mt-1 text-sm focus:outline-none w-full bg-transparent"
-                            />
+                        {/* CONTACT INFORMATION */}
+                        <div className="space-y-4 md:space-y-5 mb-6 md:mb-7">
+                            {/* ADDRESS */}
+                            <div className="flex items-start gap-3">
+                                <FaLocationDot className="text-[#30B33D] w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
+                                <p className="text-[13px] sm:text-[14px] font-[inter] font-[400] leading-relaxed text-[#A5A5A5]">
+                                    2-B East Street Ph-1 DHA Karachi-75500
+                                </p>
+                            </div>
+
+                            {/* PHONE */}
+                            <div className="flex items-center gap-3">
+                                <FaPhone className="text-[#30B33D] w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                <p className="text-[13px] sm:text-[14px] font-[inter] font-[400] text-[#A5A5A5]">
+                                    Phone: +92 21 35886401-5
+                                </p>
+                            </div>
+
+                            {/* UAN */}
+                            <div className="flex items-center gap-3">
+                                <FaHeadset className="text-[#30B33D] w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                <p className="text-[13px] sm:text-[14px] font-[inter] font-[400] text-[#A5A5A5]">
+                                    UAN: +92 21 111-589-589
+                                </p>
+                            </div>
+
+                            {/* EMAIL */}
+                            <div className="flex items-center gap-3">
+                                <FaEnvelope className="text-[#30B33D] w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                <p className="text-[13px] sm:text-[14px] font-[inter] font-[400] break-all text-[#A5A5A5]">
+                                    Dha@Dhakarahchi.Org
+                                </p>
+                            </div>
+
+                            {/* HELPLINE */}
+                            <div className="flex items-center gap-3">
+                                <FaHeadset className="text-[#30B33D] w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                <p className="text-[13px] sm:text-[14px] font-[inter] font-[400] text-[#A5A5A5]">
+                                    DHA Helpline: 1092
+                                </p>
+                            </div>
                         </div>
 
-                        {/* PASSWORD */}
-                        <div
-                            className="absolute bg-white shadow-md p-3 flex flex-col justify-center"
-                            style={{
-                                width: '361.151px',
-                                height: '62.267px',
-                                top: '324px',
-                                left: '44px',
-                                borderRadius: '9.96px'
-                            }}
-                        >
-                            <span className="text-[#30B33D] text-xs font-medium">Password</span>
-                            <input
-                                type="password"
-                                placeholder="Password Here"
-                                className="mt-1 text-sm focus:outline-none w-full bg-transparent"
-                            />
-                        </div>
+                        {/* DECORATIVE LINE */}
+                        <div className="w-full border-t border-gray-200 my-5 md:my-6"></div>
 
-                        {/* FORGOT PASSWORD */}
-                        <a
-                            href="#"
-                            className="absolute text-[13px] font-inter font-medium text-[#30B33D] leading-[16px] text-left opacity-100"
-                            style={{
-                                width: '112px',
-                                height: '16px',
-                                top: '393.46px',
-                                left: '293.22px'
-                            }}
-                        >
-                            Forgot Password?
-                        </a>
-
-                        {/* CHECKBOX */}
-                        <div
-                            className="absolute flex items-center opacity-100"
-                            style={{
-                                width: '224.85px',
-                                height: '27.4px',
-                                top: '428px',
-                                left: '44px',
-                                borderRadius: '4.98px'
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                id="terms"
-                                className="w-5 h-5 rounded-sm accent-[#30B33D]"
-                            />
-                            <label
-                                htmlFor="terms"
-                                className="ml-3 w-[185px] h-[16px] text-[13px] font-inter font-medium leading-[16px] text-gray-700"
-                            >
-                                I Agree to Terms & Conditions
-                            </label>
-                        </div>
-
-                        {/* LOGIN BUTTON */}
+                        {/* BACK BUTTON */}
                         <button
-                            className="absolute bg-[#30B33D] text-white rounded-[10px] font-inter font-medium text-[16px] text-center opacity-100 hover:bg-[#28a537] transition-colors"
-                            style={{
-                                width: '361.151px',
-                                height: '43.587px',
-                                top: '480.63px',
-                                left: '44px',
-                                lineHeight: '43.587px'
-                            }}
+                            onClick={() => router.back()}
+                            className="w-full bg-[#30B33D] text-white rounded-[10px] font-semibold font-[inter] text-[14px] sm:text-[15px] md:text-[16px] py-2.5 sm:py-3 hover:bg-[#28a537] active:bg-[#229930] transition-colors mb-4 md:mb-5"
                         >
-                            Login
+                            Back
                         </button>
-
-                        {/* SIGNUP TEXT */}
-                        <div
-                            className="absolute flex justify-center items-center space-x-1 opacity-100"
-                            style={{
-                                width: '191px',
-                                height: '16px',
-                                top: '555.11px',
-                                left: '129px'
-                            }}
-                        >
-                            <span className="font-inter font-normal text-[13px] leading-[16px] tracking-[0.02em] text-gray-700 whitespace-nowrap">
-                                Don’t have an account?
-                            </span>
-                            <a
-                                href="#"
-                                className="font-inter font-semibold text-[13px] leading-[16px] tracking-[0.02em] text-[#30B33D] whitespace-nowrap"
-                            >
-                                Login
-                            </a>
-                        </div>
-
-                        {/* FOOTER LINKS */}
-                        <div
-                            className="absolute flex items-center justify-start opacity-100 space-x-6"
-                            style={{
-                                width: '261px',
-                                height: '20px',
-                                top: '608px',
-                                left: '94px'
-                            }}
-                        >
-                            <div className="flex items-center space-x-2" style={{ width: '136.93px', height: '19.93px' }}>
-                                <FaUser className="text-[#30B33D] w-4 h-4" />
-                                <span className="font-inter font-medium text-[14px] leading-[20px] text-gray-800 whitespace-nowrap">
-                                    Contact Support
-                                </span>
-                            </div>
-                            <div className="flex items-center space-x-2" style={{ width: '90.15px', height: '19.93px' }}>
-                                <FaEarListen className="text-[#30B33D] w-4 h-4" />
-                                <span className="font-inter font-medium text-[14px] leading-[20px] text-gray-800 whitespace-nowrap">
-                                    About Us
-                                </span>
-                            </div>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
