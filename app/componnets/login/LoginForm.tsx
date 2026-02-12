@@ -1,207 +1,160 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { FaUser } from "react-icons/fa";
 import { FaEarListen } from "react-icons/fa6";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const LoginForm = () => {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
-    <div className="min-h-screen flex ">
-      {/* LEFT IMAGE */}
- <div className="hidden md:flex relative w-[864px] h-[864px] top-[59px] left-[51px] opacity-100">
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#F3F6F9] overflow-hidden">
+
+      {/* LEFT IMAGE - hidden on mobile, visible on md+ */}
+      <div className="hidden md:flex relative md:w-[50%] lg:w-[55%] md:my-[30px] md:ml-[30px] lg:my-[40px] lg:ml-[40px] flex-shrink-0 min-h-[400px]">
         <Image
           src="/images/login-sideimg.png"
           alt="Login Image"
           fill
-          className="object-cover rounded-lg"
-          style={{ transform: 'rotate(0deg)' }}
+          className="object-contain rounded-2xl"
         />
       </div>
 
-      {/* RIGHT FORM - EXACT LAYOUT DIMENSIONS */}
-      <div className="flex-1 flex justify-center items-start relative">
-        <div 
-          className="relative bg-white shadow-lg flex flex-col items-center"
-          style={{
-            width: '448.32574462890625px',
-            height: '673.9255981445312px',
-            top: '154px',
-            opacity: 1
-          }}
+      {/* MOBILE TOP IMAGE - only visible on small screens */}
+      <div className="md:hidden relative w-[full] h-[280px] flex-shrink-0 my-[20px] mx-[20px]">
+        <Image
+          src="/images/login-sideimg.png"
+          alt="Login Image"
+          fill
+          className="object-contain rounded-sm"
+        />
+      </div>
+
+{/* RIGHT FORM */}
+<div className="flex-1 flex justify-center items-center py-8 px-4 md:py-0">
+  <div className="flex flex-col items-center w-full max-w-[420px] sm:max-w-[380px] md:max-w-[420px] sm:max-h-[600px]">
+
+    {/* LOGO */}
+    <div className="mb-2 sm:mb-2 md:mb-3">
+      <Image
+        src="/images/DHA logo.png"
+        alt="Logo"
+        width={88}
+        height={88}
+        className="object-contain w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] md:w-[80px] md:h-[80px] lg:w-[88px] lg:h-[88px]"
+      />
+    </div>
+
+    {/* HEADINGS */}
+    <div className="text-center mb-4 sm:mb-4 md:mb-6">
+      <h1 className="text-[15px] sm:text-[16px] md:text-[18px] font-semibold tracking-wide text-gray-900 mb-1">
+        Welcome to DHA Karachi
+      </h1>
+      <p className="text-[12px] sm:text-[13px] md:text-[14px] font-normal text-[#A5A5A5] tracking-wide">
+        Smart Society · Home for Defenders
+      </p>
+    </div>
+
+    {/* FORM */}
+    <div className="w-full px-1 sm:px-0">
+
+      {/* SIGN IN LABEL */}
+      <h2 className="text-[16px] sm:text-[16px] md:text-[18px] font-semibold text-gray-900 mb-3 md:mb-4">
+        Sign In
+      </h2>
+
+      {/* CNIC INPUT */}
+      <div className="bg-white shadow-md rounded-[10px] px-4 py-2.5 sm:py-3 mb-3 w-full">
+        <span className="text-[#30B33D] text-[11px] sm:text-xs font-semibold block mb-1">CNIC</span>
+        <input
+          type="text"
+          placeholder="CNIC (e.g. 420401-8732608-7)"
+          className="text-[13px] sm:text-sm text-gray-700 focus:outline-none w-full bg-transparent placeholder-gray-400"
+        />
+      </div>
+
+      {/* PASSWORD INPUT */}
+      <div className="bg-white shadow-md rounded-[10px] px-4 py-2.5 sm:py-3 mb-2 w-full relative">
+        <span className="text-[#30B33D] text-[11px] sm:text-xs font-semibold block mb-1">Password</span>
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Password Here"
+          className="text-[13px] sm:text-sm text-gray-700 focus:outline-none w-full bg-transparent placeholder-gray-400 pr-8"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#30B33D]"
         >
-          <form className="w-full h-full relative flex flex-col items-center">
-            {/* LOGO */}
-            <div className="absolute w-24 h-24" style={{ top: '32px' }}>
-              <Image
-                src="/images/DHA logo.png"
-                alt="Logo"
-                width={96}
-                height={96}
-                className="object-contain"
-              />
-            </div>
+          {showPassword ? (
+            <FaEyeSlash className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          ) : (
+            <FaEye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          )}
+        </button>
+      </div>
 
-            {/* HEADINGS */}
-            <div className="absolute text-center" style={{ top: '140px' }}>
-              <h1 className="text-[18px] font-inter font-semibold tracking-[0.02em] leading-tight">
-                Welcome to DHA Karachi
-              </h1>
-              <p className="text-[16px] font-inter tracking-[0.02em] leading-tight">
-                Smart Society · Home for Defenders
-              </p>
-            </div>
+      {/* FORGOT PASSWORD */}
+      <div className="flex justify-end mb-3 md:mb-4">
+        <a href="#" className="text-[12px] sm:text-[13px] font-medium text-[#30B33D]">
+          Forgot Password?
+        </a>
+      </div>
 
-            {/* SIGN IN TEXT */}
-            <h2 
-              className="absolute text-[18px] font-inter font-semibold leading-[22px] opacity-100"
-              style={{
-                width: '59px',
-                height: '22px',
-                top: '203.43px',
-                left: '44px'
-              }}
-            >
-              Sign In
-            </h2>
-            
-            {/* CNIC */}
-            <div 
-              className="absolute bg-white shadow-md p-3 flex flex-col justify-center"
-              style={{
-                width: '361.151px',
-                height: '62.267px',
-                top: '242.77px',
-                left: '44px',
-                borderRadius: '9.96px'
-              }}
-            >
-              <span className="text-[#30B33D] text-xs font-medium">CNIC</span>
-              <input
-                type="text"
-                placeholder="CNIC (e.g. 420401-8732608-7)"
-                className="mt-1 text-sm focus:outline-none w-full bg-transparent"
-              />
-            </div>
+      {/* CHECKBOX */}
+      <div className="flex items-center mb-4 md:mb-5">
+        <input
+          type="checkbox"
+          id="terms"
+          className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded accent-[#30B33D] cursor-pointer flex-shrink-0"
+        />
+        <label
+          htmlFor="terms"
+          className="ml-2.5 sm:ml-3 text-[12px] sm:text-[13px] font-medium text-gray-700 cursor-pointer select-none"
+        >
+          I Agree to Terms &amp; Conditions
+        </label>
+      </div>
 
-            {/* PASSWORD */}
-            <div 
-              className="absolute bg-white shadow-md p-3 flex flex-col justify-center"
-              style={{
-                width: '361.151px',
-                height: '62.267px',
-                top: '324px',
-                left: '44px',
-                borderRadius: '9.96px'
-              }}
-            >
-              <span className="text-[#30B33D] text-xs font-medium">Password</span>
-              <input
-                type="password"
-                placeholder="Password Here"
-                className="mt-1 text-sm focus:outline-none w-full bg-transparent"
-              />
-            </div>
+      {/* LOGIN BUTTON */}
+      <button
+        type="button"
+        className="w-full bg-[#30B33D] text-white rounded-[10px] font-semibold text-[14px] sm:text-[15px] md:text-[16px] py-2.5 sm:py-3 hover:bg-[#28a537] active:bg-[#229930] transition-colors mb-4 md:mb-5"
+      >
+        Login
+      </button>
 
-            {/* FORGOT PASSWORD */}
-            <a
-              href="#"
-              className="absolute text-[13px] font-inter font-medium text-[#30B33D] leading-[16px] text-left opacity-100"
-              style={{
-                width: '112px',
-                height: '16px',
-                top: '393.46px',
-                left: '293.22px'
-              }}
-            >
-              Forgot Password?
-            </a>
+      {/* SIGNUP TEXT */}
+      <div className="flex justify-center items-center mb-4 md:mb-6">
+        <span className="text-[12px] sm:text-[13px] text-gray-700">
+          Don&apos;t have an account?
+        </span>
+        <a href="#" className="ml-1 text-[12px] sm:text-[13px] font-semibold text-[#30B33D]">
+          Sign Up
+        </a>
+      </div>
 
-            {/* CHECKBOX */}
-            <div 
-              className="absolute flex items-center opacity-100"
-              style={{
-                width: '224.85px',
-                height: '27.4px',
-                top: '428px',
-                left: '44px',
-                borderRadius: '4.98px'
-              }}
-            >
-              <input
-                type="checkbox"
-                id="terms"
-                className="w-5 h-5 rounded-sm accent-[#30B33D]"
-              />
-              <label
-                htmlFor="terms"
-                className="ml-3 w-[185px] h-[16px] text-[13px] font-inter font-medium leading-[16px] text-gray-700"
-              >
-                I Agree to Terms & Conditions
-              </label>
-            </div>
-
-            {/* LOGIN BUTTON */}
-            <button
-              className="absolute bg-[#30B33D] text-white rounded-[10px] font-inter font-medium text-[16px] text-center opacity-100 hover:bg-[#28a537] transition-colors"
-              style={{
-                width: '361.151px',
-                height: '43.587px',
-                top: '480.63px',
-                left: '44px',
-                lineHeight: '43.587px'
-              }}
-            >
-              Login
-            </button>
-
-            {/* SIGNUP TEXT */}
-            <div 
-              className="absolute flex justify-center items-center space-x-1 opacity-100"
-              style={{
-                width: '191px',
-                height: '16px',
-                top: '555.11px',
-                left: '129px'
-              }}
-            >
-              <span className="font-inter font-normal text-[13px] leading-[16px] tracking-[0.02em] text-gray-700 whitespace-nowrap">
-                Don’t have an account?
-              </span>
-              <a
-                href="#"
-                className="font-inter font-semibold text-[13px] leading-[16px] tracking-[0.02em] text-[#30B33D] whitespace-nowrap"
-              >
-                Login
-              </a>
-            </div>
-
-            {/* FOOTER LINKS */}
-            <div 
-              className="absolute flex items-center justify-start opacity-100 space-x-6"
-              style={{
-                width: '261px',
-                height: '20px',
-                top: '608px',
-                left: '94px'
-              }}
-            >
-              <div className="flex items-center space-x-2" style={{ width: '136.93px', height: '19.93px' }}>
-                <FaUser className="text-[#30B33D] w-4 h-4" />
-                <span className="font-inter font-medium text-[14px] leading-[20px] text-gray-800 whitespace-nowrap">
-                  Contact Support
-                </span>
-              </div>
-              <div className="flex items-center space-x-2" style={{ width: '90.15px', height: '19.93px' }}>
-                <FaEarListen className="text-[#30B33D] w-4 h-4" />
-                <span className="font-inter font-medium text-[14px] leading-[20px] text-gray-800 whitespace-nowrap">
-                  About Us
-                </span>
-              </div>
-            </div>
-          </form>
+      {/* FOOTER LINKS */}
+      <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-6 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <FaUser className="text-[#30B33D] w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="text-[12px] sm:text-[13px] md:text-[14px] font-medium text-gray-800">
+            Contact Support
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <FaEarListen className="text-[#30B33D] w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="text-[12px] sm:text-[13px] md:text-[14px] font-medium text-gray-800">
+            About Us
+          </span>
         </div>
       </div>
+
+    </div>
+  </div>
+</div>
     </div>
   );
 };

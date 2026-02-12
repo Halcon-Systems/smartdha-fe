@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Loader from "@/app/componnets/ui/loader";
-import LoginForm from "@/app/componnets/login/LoginForm";
-import ContactSupport from "../componnets/contact-support/page";
+import ContactSupport from "@/app/componnets/contact-support/page";
 
 function Page() {
   const [loading, setLoading] = useState(true);
@@ -22,7 +21,7 @@ function Page() {
     );
   }
 
-  return <ContactSupport />;
+  return <ContactSupport/>;
 }
 
 export default Page;
