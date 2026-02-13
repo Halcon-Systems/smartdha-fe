@@ -1,3 +1,4 @@
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import {
   FiChevronLeft,
@@ -11,79 +12,46 @@ import {
 
 type ResidentType = {
   id: number;
-  name: string;
-  relation: string;
-  phone: string;
-  dob: string;
-  cnic: string;
-  residentCard: string;
-};
-
-type CommercialType = {
-  id: number;
-  companyName: string;
-  ownerName: string;
-  phone: string;
-  cnic: string;
-  officeNo: string;
+  licensePlate: string;
+  eTagId: string;
+  ownership: string;
+  make: string;
+  model: string;
+  year: string;
+  color: string;
+  status: string;
 };
 
 /* ================= COMPONENT ================= */
 
 const Resident = () => {
-  const [activeTab, setActiveTab] = useState<
-    "commercial" | "resident"
-  >("commercial");
-
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const router = useRouter();
 
   /* ================= LARGE DUMMY DATA ================= */
 
-  const dummyResidents: ResidentType[] = Array.from(
+  const dummyVehicles: ResidentType[] = Array.from(
     { length: 45 },
     (_, i) => ({
       id: i + 1,
-      name: `Resident ${i + 1}`,
-      relation:
-        i % 3 === 0 ? "Son" : i % 3 === 1 ? "Daughter" : "Spouse",
-      phone: `0301-2346${(10 + i)
-        .toString()
-        .padStart(2, "0")}`,
-      dob: `0${(i % 9) + 1}-0${(i % 11) + 1}-199${i % 10}`,
-      cnic: `35201-12345${i
-        .toString()
-        .padStart(2, "0")}-1`,
-      residentCard: `UID-92786453${1000 + i}`,
-    })
-  );
-
-  const dummyCommercial: CommercialType[] = Array.from(
-    { length: 32 },
-    (_, i) => ({
-      id: i + 1,
-      companyName: `Company ${i + 1}`,
-      ownerName: `Owner ${i + 1}`,
-      phone: `0300-5678${(10 + i)
-        .toString()
-        .padStart(2, "0")}`,
-      cnic: `42101-76543${i
-        .toString()
-        .padStart(2, "0")}-1`,
-      officeNo: `Office ${100 + i}`,
+      licensePlate: `ABC-${1000 + i}`,
+      eTagId: `ETAG-${5000 + i}`,
+      ownership: i % 2 === 0 ? "Owner" : "Tenant",
+      make: i % 3 === 0 ? "Toyota" : i % 3 === 1 ? "Honda" : "Suzuki",
+      model: i % 3 === 0 ? "Corolla" : i % 3 === 1 ? "Civic" : "Alto",
+      year: `${2015 + (i % 10)}`,
+      color: i % 3 === 0 ? "White" : i % 3 === 1 ? "Black" : "Silver",
+      status: i % 2 === 0 ? "Active" : "Inactive",
     })
   );
 
   /* ================= PAGINATION ================= */
 
-  const activeData =
-    activeTab === "resident"
-      ? dummyResidents
-      : dummyCommercial;
-
   const totalPages = Math.ceil(
-    activeData.length / rowsPerPage
+    dummyVehicles.length / rowsPerPage
   );
 
   const startIndex =
@@ -91,11 +59,10 @@ const Resident = () => {
 
   const endIndex = startIndex + rowsPerPage;
 
-  const paginatedData = activeData.slice(
+  const paginatedData = dummyVehicles.slice(
     startIndex,
     endIndex
   );
-
   /* ================= ROW COLOR ================= */
 
   const rowStyle = (index: number) =>
@@ -107,7 +74,7 @@ const Resident = () => {
 
   return (
     <div className="w-full">
-      
+
       {/* <AddResidentForm
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -115,9 +82,9 @@ const Resident = () => {
       /> */}
 
 
-     <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-6">
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => router.push("/vehicle/add-vehicle")}
           className="bg-gradient-to-t from-[rgba(48,179,61,0.7)] to-[rgba(48,179,61,1)] 
                      text-white text-sm font-semibold px-4 py-2 rounded-xl
                      hover:from-[rgba(48,179,61,0.7)] hover:to-[rgba(48,179,61,1)] 
@@ -130,32 +97,52 @@ const Resident = () => {
       {/* ================= TABLE ================= */}
 
       <div className="bg-white border border-gray-200 rounded-bl-xl rounded-br-xl overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 flex justify-between items-center">
+          <div>
+            <h2 className="text-sm font-semibold">
+              Vehicle Records
+            </h2>
+            <p className="text-xs text-gray-500">
+              {dummyVehicles.length} total records
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs">Show:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-1 text-xs"
+            >
+              {[5, 10, 20, 30].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {/* Table Body */}
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50 text-xs uppercase">
               <tr>
-                {activeTab === "resident" ? (
-                  <>
-                    <th className="px-4 py-3 text-left">Name</th>
-                    <th className="px-4 py-3 text-left">Relation</th>
-                    <th className="px-4 py-3 text-left">Phone</th>
-                    <th className="px-4 py-3 text-left">DOB</th>
-                    <th className="px-4 py-3 text-left">CNIC</th>
-                    <th className="px-4 py-3 text-left">Resident Card</th>
-                    <th className="px-4 py-3 text-center">Action</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="px-4 py-3 text-left">Company Name</th>
-                    <th className="px-4 py-3 text-left">Owner Name</th>
-                    <th className="px-4 py-3 text-left">Phone</th>
-                    <th className="px-4 py-3 text-left">CNIC</th>
-                    <th className="px-4 py-3 text-left">Office No.</th>
-                    <th className="px-4 py-3 text-center">Action</th>
-                  </>
-                )}
+                <>
+                  <th className="px-4 py-3 text-left">State/Provided License Plate</th>
+                  <th className="px-4 py-3 text-left">Vehicle E-Tag ID</th>
+                  <th className="px-4 py-3 text-left">Ownership</th>
+                  <th className="px-4 py-3 text-left">Make</th>
+                  <th className="px-4 py-3 text-left">Model</th>
+                  <th className="px-4 py-3 text-left">Year</th>
+                  <th className="px-4 py-3 text-center">Color</th>
+                  <th className="px-4 py-3 text-center">Status</th>
+                  <th className="px-4 py-3 text-center">Action</th>
+                </>
               </tr>
             </thead>
 
@@ -165,46 +152,31 @@ const Resident = () => {
                   key={item.id}
                   className={`${rowStyle(index)} hover:bg-gray-50`}
                 >
-                  {activeTab === "resident" ? (
-                    <>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).name}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).relation}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.phone}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).dob}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.cnic}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).residentCard}
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as CommercialType).companyName}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as CommercialType).ownerName}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.phone}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.cnic}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as CommercialType).officeNo}
-                      </td>
-                    </>
-                  )}
+                  <td className="px-4 py-3 text-sm">
+                    {(item as ResidentType).licensePlate}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {(item as ResidentType).eTagId}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.ownership}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {(item as ResidentType).make}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.model}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {(item as ResidentType).year}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {(item as ResidentType).color}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {(item as ResidentType).status}
+                  </td>
+                  
 
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
@@ -227,8 +199,8 @@ const Resident = () => {
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
             Showing {startIndex + 1} to{" "}
-            {Math.min(endIndex, activeData.length)} of{" "}
-            {activeData.length}
+            {Math.min(endIndex, dummyVehicles.length)} of{" "}
+            {dummyVehicles.length}
           </div>
 
           <div className="flex items-center gap-2">
@@ -237,11 +209,10 @@ const Resident = () => {
                 setCurrentPage((p) => Math.max(1, p - 1))
               }
               disabled={currentPage === 1}
-              className={`p-2 rounded border transition ${
-                currentPage === 1
+              className={`p-2 rounded border transition ${currentPage === 1
                   ? "border-gray-300 text-gray-300 cursor-not-allowed"
                   : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
-              }`}
+                }`}
             >
               <FiChevronLeft />
             </button>
@@ -257,11 +228,10 @@ const Resident = () => {
                 )
               }
               disabled={currentPage === totalPages}
-              className={`p-2 rounded border transition ${
-                currentPage === totalPages
+              className={`p-2 rounded border transition ${currentPage === totalPages
                   ? "border-gray-300 text-gray-300 cursor-not-allowed"
                   : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
-              }`}
+                }`}
             >
               <FiChevronRight />
             </button>

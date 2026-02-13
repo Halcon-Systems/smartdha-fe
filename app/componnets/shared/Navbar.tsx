@@ -68,7 +68,7 @@ export default function Navbar() {
           />
         </div>
         {/* Search icon */}
-        <div className="bg-white p-2 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.25)] cursor-pointer">
+        <div className="bg-[#F3F6F9] p-2 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.25)] cursor-pointer">
           <SvgIcon name="search-icon" size={12} className="" />
         </div>
       </div>
