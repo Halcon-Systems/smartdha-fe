@@ -1,9 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
-import About from '../../componnets/About'
-import Loader from '../../componnets/ui/loader';
-import Dashboard from '@/app/componnets/dashboard/Dashboard';
+// import Loader from '../../componnets/ui/loader';
+import Resident from '@/app/componnets/resident/Resident';
+import Vehicle from '@/app/componnets/vehicle/Vehicle';
+import AddVehicleForm from '@/app/componnets/vehicle/AddVehicleForm';
+import Loader from '@/app/componnets/ui/loader';
 
 const Page = () => {
   const [loading, setLoading] = useState(true);
@@ -19,11 +21,11 @@ const Page = () => {
   if (loading) {
     //  Show same loader here
     return (
-      <Loader/>
+      <Loader />
     );
   }
 
-  return <Dashboard />;
+  return <AddVehicleForm />;
 }
 
 export default Page
