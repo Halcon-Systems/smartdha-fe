@@ -5,7 +5,7 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
-import AddResidentForm from "./AddResidentForm";
+// import AddResidentForm from "./AddResidentForm";
 
 /* ================= TYPES ================= */
 
@@ -127,74 +127,9 @@ const Resident = () => {
         </button>
       </div>
 
-
-
-      {/* ================= TABS ================= */}
-
-      <div className="flex w-full border-b-2 border-gray-200">
-        <button
-          onClick={() => {
-            setActiveTab("commercial");
-            setCurrentPage(1);
-          }}
-          className={`flex-1 py-2.5 font-semibold rounded-tr-none rounded-tl-xl ${
-            activeTab === "commercial"
-              ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
-              : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
-          }`}
-        >
-          Commercial
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab("resident");
-            setCurrentPage(1);
-          }}
-          className={`flex-1 py-2.5 font-semibold rounded-tr-xl rounded-tl-none ${
-            activeTab === "resident"
-              ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
-              : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
-          }`}
-        >
-          Residents
-        </button>
-      </div>
-
       {/* ================= TABLE ================= */}
 
       <div className="bg-white border border-gray-200 rounded-bl-xl rounded-br-xl overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-3 flex justify-between items-center">
-          <div>
-            <h2 className="text-sm font-semibold">
-              {activeTab === "resident"
-                ? "Resident List"
-                : "Commercial List"}
-            </h2>
-            <p className="text-xs text-gray-500">
-              {activeData.length} total records
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs">Show:</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => {
-                setRowsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-300 rounded px-2 py-1 text-xs"
-            >
-              {[5, 10, 20, 30].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
 
         {/* Table Body */}
         <div className="overflow-x-auto">
