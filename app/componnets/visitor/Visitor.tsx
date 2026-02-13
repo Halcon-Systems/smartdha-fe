@@ -5,82 +5,69 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
-import AddResidentForm from "./AddResidentForm";
 
 /* ================= TYPES ================= */
 
-type ResidentType = {
+type PreviousVisitorsType = {
   id: number;
   name: string;
-  relation: string;
-  phone: string;
-  dob: string;
+  vehicleInfo: string;
+  visitDetail: string;
+  validity: string;
   cnic: string;
-  residentCard: string;
 };
 
-type CommercialType = {
+type UpcomingVisitorsType = {
   id: number;
-  companyName: string;
-  ownerName: string;
-  phone: string;
+  name: string;
+  vehicleInfo: string;
+  visitDetail: string;
+  validity: string;
   cnic: string;
-  officeNo: string;
 };
 
 /* ================= COMPONENT ================= */
 
-const Resident = () => {
+const Visitor = () => {
   const [activeTab, setActiveTab] = useState<
-    "commercial" | "resident"
-  >("commercial");
+    "Upcoming Visitors" | "Previous Visitors"
+  >("Upcoming Visitors");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   /* ================= LARGE DUMMY DATA ================= */
 
-  const dummyResidents: ResidentType[] = Array.from(
+  const dummyPreviousVisitors: PreviousVisitorsType[] = Array.from(
     { length: 45 },
     (_, i) => ({
       id: i + 1,
-      name: `Resident ${i + 1}`,
-      relation:
-        i % 3 === 0 ? "Son" : i % 3 === 1 ? "Daughter" : "Spouse",
-      phone: `0301-2346${(10 + i)
-        .toString()
-        .padStart(2, "0")}`,
-      dob: `0${(i % 9) + 1}-0${(i % 11) + 1}-199${i % 10}`,
-      cnic: `35201-12345${i
-        .toString()
-        .padStart(2, "0")}-1`,
-      residentCard: `UID-92786453${1000 + i}`,
+      name: `Previous Visitor ${i + 1}`,
+      vehicleInfo: i % 2 === 0 ? "Honda Civic ABC-123" : "Toyota Corolla XYZ-789",
+      visitDetail: i % 3 === 0 ? "Meeting with CEO" : i % 3 === 1 ? "Delivery" : "Maintenance",
+      validity: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
+      cnic: `35201-12345${i.toString().padStart(2, "0")}-1`,
     })
   );
 
-  const dummyCommercial: CommercialType[] = Array.from(
+  const dummyUpcomingVisitors: UpcomingVisitorsType[] = Array.from(
     { length: 32 },
     (_, i) => ({
       id: i + 1,
-      companyName: `Company ${i + 1}`,
-      ownerName: `Owner ${i + 1}`,
-      phone: `0300-5678${(10 + i)
-        .toString()
-        .padStart(2, "0")}`,
-      cnic: `42101-76543${i
-        .toString()
-        .padStart(2, "0")}-1`,
-      officeNo: `Office ${100 + i}`,
+      name: `Upcoming Visitor ${i + 1}`,
+      vehicleInfo: i % 2 === 0 ? "Suzuki Mehran DEF-456" : "Honda CD70 GHI-012",
+      visitDetail: i % 3 === 0 ? "Interview" : i % 3 === 1 ? "Site Visit" : "Contract Signing",
+      validity: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
+      cnic: `42101-76543${i.toString().padStart(2, "0")}-1`,
     })
   );
 
   /* ================= PAGINATION ================= */
 
   const activeData =
-    activeTab === "resident"
-      ? dummyResidents
-      : dummyCommercial;
+    activeTab === "Previous Visitors"
+      ? dummyPreviousVisitors
+      : dummyUpcomingVisitors;
 
   const totalPages = Math.ceil(
     activeData.length / rowsPerPage
@@ -107,17 +94,8 @@ const Resident = () => {
 
   return (
     <div className="w-full">
-      
-      <AddResidentForm
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        initialTab={activeTab}
-      />
-
-
-     <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-6">
         <button
-          onClick={() => setIsAddModalOpen(true)}
           className="bg-gradient-to-t from-[rgba(48,179,61,0.7)] to-[rgba(48,179,61,1)] 
                      text-white text-sm font-semibold px-4 py-2 rounded-xl
                      hover:from-[rgba(48,179,61,0.7)] hover:to-[rgba(48,179,61,1)] 
@@ -127,50 +105,46 @@ const Resident = () => {
         </button>
       </div>
 
-
-
       {/* ================= TABS ================= */}
-
       <div className="flex w-full border-b-2 border-gray-200">
         <button
           onClick={() => {
-            setActiveTab("commercial");
+            setActiveTab("Upcoming Visitors");
             setCurrentPage(1);
           }}
           className={`flex-1 py-2.5 font-semibold rounded-tr-none rounded-tl-xl ${
-            activeTab === "commercial"
+            activeTab === "Upcoming Visitors"
               ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
               : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
           }`}
         >
-          Commercial
+          Upcoming Visitors
         </button>
 
         <button
           onClick={() => {
-            setActiveTab("resident");
+            setActiveTab("Previous Visitors");
             setCurrentPage(1);
           }}
           className={`flex-1 py-2.5 font-semibold rounded-tr-xl rounded-tl-none ${
-            activeTab === "resident"
+            activeTab === "Previous Visitors"
               ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
               : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
           }`}
         >
-          Residents
+          Previous Visitors
         </button>
       </div>
 
       {/* ================= TABLE ================= */}
-
       <div className="bg-white border border-gray-200 rounded-bl-xl rounded-br-xl overflow-hidden">
         {/* Header */}
         <div className="px-4 py-3 flex justify-between items-center">
           <div>
             <h2 className="text-sm font-semibold">
-              {activeTab === "resident"
-                ? "Resident List"
-                : "Commercial List"}
+              {activeTab === "Previous Visitors"
+                ? "Previous Visitors List"
+                : "Upcoming Visitors List"}
             </h2>
             <p className="text-xs text-gray-500">
               {activeData.length} total records
@@ -201,26 +175,12 @@ const Resident = () => {
           <table className="min-w-full">
             <thead className="bg-gray-50 text-xs uppercase">
               <tr>
-                {activeTab === "resident" ? (
-                  <>
-                    <th className="px-4 py-3 text-left">Name</th>
-                    <th className="px-4 py-3 text-left">Relation</th>
-                    <th className="px-4 py-3 text-left">Phone</th>
-                    <th className="px-4 py-3 text-left">DOB</th>
-                    <th className="px-4 py-3 text-left">CNIC</th>
-                    <th className="px-4 py-3 text-left">Resident Card</th>
-                    <th className="px-4 py-3 text-center">Action</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="px-4 py-3 text-left">Company Name</th>
-                    <th className="px-4 py-3 text-left">Owner Name</th>
-                    <th className="px-4 py-3 text-left">Phone</th>
-                    <th className="px-4 py-3 text-left">CNIC</th>
-                    <th className="px-4 py-3 text-left">Office No.</th>
-                    <th className="px-4 py-3 text-center">Action</th>
-                  </>
-                )}
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Vehicle Info</th>
+                <th className="px-4 py-3 text-left">Visit Detail</th>
+                <th className="px-4 py-3 text-left">Validity</th>
+                <th className="px-4 py-3 text-left">CNIC No.</th>
+                <th className="px-4 py-3 text-center">Action</th>
               </tr>
             </thead>
 
@@ -230,46 +190,21 @@ const Resident = () => {
                   key={item.id}
                   className={`${rowStyle(index)} hover:bg-gray-50`}
                 >
-                  {activeTab === "resident" ? (
-                    <>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).name}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).relation}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.phone}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).dob}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.cnic}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as ResidentType).residentCard}
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as CommercialType).companyName}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as CommercialType).ownerName}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.phone}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.cnic}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {(item as CommercialType).officeNo}
-                      </td>
-                    </>
-                  )}
+                  <td className="px-4 py-3 text-sm">
+                    {item.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.vehicleInfo}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.visitDetail}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.validity}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.cnic}
+                  </td>
 
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
@@ -288,7 +223,6 @@ const Resident = () => {
         </div>
 
         {/* ================= GREEN PAGINATION ================= */}
-
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
             Showing {startIndex + 1} to{" "}
@@ -337,4 +271,4 @@ const Resident = () => {
   );
 };
 
-export default Resident;
+export default Visitor;
