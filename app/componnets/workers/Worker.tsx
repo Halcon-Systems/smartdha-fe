@@ -6,25 +6,25 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
-// import AddResidentForm from "./AddResidentForm";
+// import AddWorkerForm from "./AddWorkerForm";
 
 /* ================= TYPES ================= */
 
-type ResidentType = {
+type WorkerType = {
   id: number;
-  licensePlate: string;
-  eTagId: string;
-  ownership: string;
-  make: string;
-  model: string;
-  year: string;
-  color: string;
+  name: string;
+  workerId: string;
+  department: string;
+  designation: string;
+  phone: string;
+  cnic: string;
+  shift: string;
   status: string;
 };
 
 /* ================= COMPONENT ================= */
 
-const Vehicle = () => {
+const Worker = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,25 +33,25 @@ const Vehicle = () => {
 
   /* ================= LARGE DUMMY DATA ================= */
 
-  const dummyVehicles: ResidentType[] = Array.from(
+  const dummyWorkers: WorkerType[] = Array.from(
     { length: 45 },
     (_, i) => ({
       id: i + 1,
-      licensePlate: `ABC-${1000 + i}`,
-      eTagId: `ETAG-${5000 + i}`,
-      ownership: i % 2 === 0 ? "Owner" : "Tenant",
-      make: i % 3 === 0 ? "Toyota" : i % 3 === 1 ? "Honda" : "Suzuki",
-      model: i % 3 === 0 ? "Corolla" : i % 3 === 1 ? "Civic" : "Alto",
-      year: `${2015 + (i % 10)}`,
-      color: i % 3 === 0 ? "White" : i % 3 === 1 ? "Black" : "Silver",
-      status: i % 2 === 0 ? "Active" : "Inactive",
+      name: `Worker ${i + 1}`,
+      workerId: `WRK-${1000 + i}`,
+      department: i % 3 === 0 ? "Security" : i % 3 === 1 ? "Maintenance" : "Housekeeping",
+      designation: i % 3 === 0 ? "Guard" : i % 3 === 1 ? "Technician" : "Cleaner",
+      phone: `0300-123${(100 + i).toString().padStart(3, "0")}`,
+      cnic: `35201-12345${i.toString().padStart(3, "0")}-${(i % 9) + 1}`,
+      shift: i % 3 === 0 ? "Morning" : i % 3 === 1 ? "Evening" : "Night",
+      status: i % 4 === 0 ? "Inactive" : "Active",
     })
   );
 
   /* ================= PAGINATION ================= */
 
   const totalPages = Math.ceil(
-    dummyVehicles.length / rowsPerPage
+    dummyWorkers.length / rowsPerPage
   );
 
   const startIndex =
@@ -59,7 +59,7 @@ const Vehicle = () => {
 
   const endIndex = startIndex + rowsPerPage;
 
-  const paginatedData = dummyVehicles.slice(
+  const paginatedData = dummyWorkers.slice(
     startIndex,
     endIndex
   );
@@ -75,16 +75,15 @@ const Vehicle = () => {
   return (
     <div className="w-full">
 
-      {/* <AddResidentForm
+      {/* <AddWorkerForm
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        initialTab={activeTab}
       /> */}
 
 
       <div className="flex justify-end mb-6">
         <button
-          onClick={() => router.push("/vehicle/add-vehicle")}
+          onClick={() => router.push("/worker/add-worker")}
           className="bg-gradient-to-t from-[rgba(48,179,61,0.7)] to-[rgba(48,179,61,1)] 
                      text-white text-sm font-semibold px-4 py-2 rounded-xl
                      hover:from-[rgba(48,179,61,0.7)] hover:to-[rgba(48,179,61,1)] 
@@ -101,10 +100,10 @@ const Vehicle = () => {
         <div className="px-4 py-3 flex justify-between items-center">
           <div>
             <h2 className="text-sm font-semibold">
-              Vehicle Records
+              Worker Records
             </h2>
             <p className="text-xs text-gray-500">
-              {dummyVehicles.length} total records
+              {dummyWorkers.length} total records
             </p>
           </div>
 
@@ -133,13 +132,13 @@ const Vehicle = () => {
             <thead className="bg-gray-50 text-xs uppercase">
               <tr>
                 <>
-                  <th className="px-4 py-3 text-left">State/Provided License Plate</th>
-                  <th className="px-4 py-3 text-left">Vehicle E-Tag ID</th>
-                  <th className="px-4 py-3 text-left">Ownership</th>
-                  <th className="px-4 py-3 text-left">Make</th>
-                  <th className="px-4 py-3 text-left">Model</th>
-                  <th className="px-4 py-3 text-left">Year</th>
-                  <th className="px-4 py-3 text-center">Color</th>
+                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">ID</th>
+                  <th className="px-4 py-3 text-left">Department</th>
+                  <th className="px-4 py-3 text-left">Designation</th>
+                  <th className="px-4 py-3 text-left">Phone</th>
+                  <th className="px-4 py-3 text-left">CNIC</th>
+                  <th className="px-4 py-3 text-center">Shift</th>
                   <th className="px-4 py-3 text-center">Status</th>
                   <th className="px-4 py-3 text-center">Action</th>
                 </>
@@ -153,28 +152,34 @@ const Vehicle = () => {
                   className={`${rowStyle(index)} hover:bg-gray-50`}
                 >
                   <td className="px-4 py-3 text-sm">
-                    {(item as ResidentType).licensePlate}
+                    {item.name}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {(item as ResidentType).eTagId}
+                    {item.workerId}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.ownership}
+                    {item.department}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {(item as ResidentType).make}
+                    {item.designation}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.model}
+                    {item.phone}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {(item as ResidentType).year}
+                    {item.cnic}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {(item as ResidentType).color}
+                    {item.shift}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {(item as ResidentType).status}
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      item.status === 'Active' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {item.status}
+                </span>
                   </td>
                   
 
@@ -199,8 +204,8 @@ const Vehicle = () => {
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
             Showing {startIndex + 1} to{" "}
-            {Math.min(endIndex, dummyVehicles.length)} of{" "}
-            {dummyVehicles.length}
+            {Math.min(endIndex, dummyWorkers.length)} of{" "}
+            {dummyWorkers.length}
           </div>
 
           <div className="flex items-center gap-2">
@@ -242,4 +247,4 @@ const Vehicle = () => {
   );
 };
 
-export default Vehicle;
+export default Worker;
