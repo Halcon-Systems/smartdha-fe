@@ -45,22 +45,22 @@ const membershipItems: DropdownItem[] = [
   },
   {
     label: "Visitor Pass",
-    href: "/visitor-pass",
+    href: "/visitor",
     icon: <SvgIcon name="visitor-pass-icon" size={16} />,
   },
   {
     label: "Worker",
-    href: "/membership/worker",
+    href: "/worker",
     icon: <SvgIcon name="worker-icon" size={16} />,
   },
   {
     label: "Luggage Pass",
-    href: "/membership/luggage-pass",
+    href: "/luggage-pass",
     icon: <SvgIcon name="luggage-pass-icon" size={16} />,
   },
   {
     label: "Properties",
-    href: "/membership/properties",
+    href: "/properties",
     icon: <SvgIcon name="properties-icon" size={16} />,
   },
 ];
