@@ -24,7 +24,7 @@ type ResidentType = {
 
 /* ================= COMPONENT ================= */
 
-const Resident = () => {
+const Vehicle = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -242,4 +242,4 @@ const Resident = () => {
   );
 };
 
-export default Resident;
+export default Vehicle;

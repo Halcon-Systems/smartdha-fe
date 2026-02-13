@@ -1,3 +1,4 @@
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import {
   FiChevronLeft,
@@ -5,72 +6,52 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
+// import AddWorkerForm from "./AddWorkerForm";
 
 /* ================= TYPES ================= */
 
-type PreviousVisitorsType = {
+type WorkerType = {
   id: number;
   name: string;
-  vehicleInfo: string;
-  visitDetail: string;
-  validity: string;
+  workerId: string;
+  department: string;
+  designation: string;
+  phone: string;
   cnic: string;
-};
-
-type UpcomingVisitorsType = {
-  id: number;
-  name: string;
-  vehicleInfo: string;
-  visitDetail: string;
-  validity: string;
-  cnic: string;
+  shift: string;
+  status: string;
 };
 
 /* ================= COMPONENT ================= */
 
-const Visitor = () => {
-  const [activeTab, setActiveTab] = useState<
-    "Upcoming Visitors" | "Previous Visitors"
-  >("Upcoming Visitors");
-
+const Worker = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const router = useRouter();
 
   /* ================= LARGE DUMMY DATA ================= */
 
-  const dummyPreviousVisitors: PreviousVisitorsType[] = Array.from(
+  const dummyWorkers: WorkerType[] = Array.from(
     { length: 45 },
     (_, i) => ({
       id: i + 1,
-      name: `Previous Visitor ${i + 1}`,
-      vehicleInfo: i % 2 === 0 ? "Honda Civic ABC-123" : "Toyota Corolla XYZ-789",
-      visitDetail: i % 3 === 0 ? "Meeting with CEO" : i % 3 === 1 ? "Delivery" : "Maintenance",
-      validity: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
-      cnic: `35201-12345${i.toString().padStart(2, "0")}-1`,
-    })
-  );
-
-  const dummyUpcomingVisitors: UpcomingVisitorsType[] = Array.from(
-    { length: 32 },
-    (_, i) => ({
-      id: i + 1,
-      name: `Upcoming Visitor ${i + 1}`,
-      vehicleInfo: i % 2 === 0 ? "Suzuki Mehran DEF-456" : "Honda CD70 GHI-012",
-      visitDetail: i % 3 === 0 ? "Interview" : i % 3 === 1 ? "Site Visit" : "Contract Signing",
-      validity: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
-      cnic: `42101-76543${i.toString().padStart(2, "0")}-1`,
+      name: `Worker ${i + 1}`,
+      workerId: `WRK-${1000 + i}`,
+      department: i % 3 === 0 ? "Security" : i % 3 === 1 ? "Maintenance" : "Housekeeping",
+      designation: i % 3 === 0 ? "Guard" : i % 3 === 1 ? "Technician" : "Cleaner",
+      phone: `0300-123${(100 + i).toString().padStart(3, "0")}`,
+      cnic: `35201-12345${i.toString().padStart(3, "0")}-${(i % 9) + 1}`,
+      shift: i % 3 === 0 ? "Morning" : i % 3 === 1 ? "Evening" : "Night",
+      status: i % 4 === 0 ? "Inactive" : "Active",
     })
   );
 
   /* ================= PAGINATION ================= */
 
-  const activeData =
-    activeTab === "Previous Visitors"
-      ? dummyPreviousVisitors
-      : dummyUpcomingVisitors;
-
   const totalPages = Math.ceil(
-    activeData.length / rowsPerPage
+    dummyWorkers.length / rowsPerPage
   );
 
   const startIndex =
@@ -78,11 +59,10 @@ const Visitor = () => {
 
   const endIndex = startIndex + rowsPerPage;
 
-  const paginatedData = activeData.slice(
+  const paginatedData = dummyWorkers.slice(
     startIndex,
     endIndex
   );
-
   /* ================= ROW COLOR ================= */
 
   const rowStyle = (index: number) =>
@@ -94,8 +74,16 @@ const Visitor = () => {
 
   return (
     <div className="w-full">
+
+      {/* <AddWorkerForm
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      /> */}
+
+
       <div className="flex justify-end mb-6">
         <button
+          onClick={() => router.push("/worker/add-worker")}
           className="bg-gradient-to-t from-[rgba(48,179,61,0.7)] to-[rgba(48,179,61,1)] 
                      text-white text-sm font-semibold px-4 py-2 rounded-xl
                      hover:from-[rgba(48,179,61,0.7)] hover:to-[rgba(48,179,61,1)] 
@@ -105,49 +93,17 @@ const Visitor = () => {
         </button>
       </div>
 
-      {/* ================= TABS ================= */}
-      <div className="flex w-full border-b-2 border-gray-200">
-        <button
-          onClick={() => {
-            setActiveTab("Upcoming Visitors");
-            setCurrentPage(1);
-          }}
-          className={`flex-1 py-2.5 font-semibold rounded-tr-none rounded-tl-xl ${
-            activeTab === "Upcoming Visitors"
-              ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
-              : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
-          }`}
-        >
-          Upcoming Visitors
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab("Previous Visitors");
-            setCurrentPage(1);
-          }}
-          className={`flex-1 py-2.5 font-semibold rounded-tr-xl rounded-tl-none ${
-            activeTab === "Previous Visitors"
-              ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
-              : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
-          }`}
-        >
-          Previous Visitors
-        </button>
-      </div>
-
       {/* ================= TABLE ================= */}
+
       <div className="bg-white border border-gray-200 rounded-bl-xl rounded-br-xl overflow-hidden">
         {/* Header */}
         <div className="px-4 py-3 flex justify-between items-center">
           <div>
             <h2 className="text-sm font-semibold">
-              {activeTab === "Previous Visitors"
-                ? "Previous Visitors List"
-                : "Upcoming Visitors List"}
+              Worker Records
             </h2>
             <p className="text-xs text-gray-500">
-              {activeData.length} total records
+              {dummyWorkers.length} total records
             </p>
           </div>
 
@@ -175,12 +131,17 @@ const Visitor = () => {
           <table className="min-w-full">
             <thead className="bg-gray-50 text-xs uppercase">
               <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Vehicle Info</th>
-                <th className="px-4 py-3 text-left">Visit Detail</th>
-                <th className="px-4 py-3 text-left">Validity</th>
-                <th className="px-4 py-3 text-left">CNIC No.</th>
-                <th className="px-4 py-3 text-center">Action</th>
+                <>
+                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">ID</th>
+                  <th className="px-4 py-3 text-left">Department</th>
+                  <th className="px-4 py-3 text-left">Designation</th>
+                  <th className="px-4 py-3 text-left">Phone</th>
+                  <th className="px-4 py-3 text-left">CNIC</th>
+                  <th className="px-4 py-3 text-center">Shift</th>
+                  <th className="px-4 py-3 text-center">Status</th>
+                  <th className="px-4 py-3 text-center">Action</th>
+                </>
               </tr>
             </thead>
 
@@ -194,17 +155,33 @@ const Visitor = () => {
                     {item.name}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.vehicleInfo}
+                    {item.workerId}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.visitDetail}
+                    {item.department}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.validity}
+                    {item.designation}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.phone}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {item.cnic}
                   </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.shift}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      item.status === 'Active' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {item.status}
+                </span>
+                  </td>
+                  
 
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
@@ -223,11 +200,12 @@ const Visitor = () => {
         </div>
 
         {/* ================= GREEN PAGINATION ================= */}
+
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
             Showing {startIndex + 1} to{" "}
-            {Math.min(endIndex, activeData.length)} of{" "}
-            {activeData.length}
+            {Math.min(endIndex, dummyWorkers.length)} of{" "}
+            {dummyWorkers.length}
           </div>
 
           <div className="flex items-center gap-2">
@@ -236,11 +214,10 @@ const Visitor = () => {
                 setCurrentPage((p) => Math.max(1, p - 1))
               }
               disabled={currentPage === 1}
-              className={`p-2 rounded border transition ${
-                currentPage === 1
+              className={`p-2 rounded border transition ${currentPage === 1
                   ? "border-gray-300 text-gray-300 cursor-not-allowed"
                   : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
-              }`}
+                }`}
             >
               <FiChevronLeft />
             </button>
@@ -256,11 +233,10 @@ const Visitor = () => {
                 )
               }
               disabled={currentPage === totalPages}
-              className={`p-2 rounded border transition ${
-                currentPage === totalPages
+              className={`p-2 rounded border transition ${currentPage === totalPages
                   ? "border-gray-300 text-gray-300 cursor-not-allowed"
                   : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
-              }`}
+                }`}
             >
               <FiChevronRight />
             </button>
@@ -271,4 +247,4 @@ const Visitor = () => {
   );
 };
 
-export default Visitor;
+export default Worker;
