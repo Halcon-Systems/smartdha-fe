@@ -1,9 +1,11 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import Loader from "@/app/componnets/ui/loader";
-import ContactSupport from "@/app/componnets/contact-support/Contact";
+"use client"
 
-function Page() {
+import React, { useEffect, useState } from 'react'
+import About from '../../componnets/About'
+import Loader from '../../componnets/ui/loader';
+import Dashboard from '@/app/componnets/dashboard/Dashboard';
+
+const Page = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ function Page() {
     );
   }
 
-  return <ContactSupport/>;
+  return <Dashboard />;
 }
 
-export default Page;
+export default Page

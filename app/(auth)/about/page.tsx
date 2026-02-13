@@ -1,10 +1,10 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import Loader from "@/app/componnets/ui/loader";
-import LoginForm from "@/app/componnets/login/LoginForm";
-import ContactSupport from "../componnets/contact-support/page";
+"use client"
 
-function Page() {
+import React, { useEffect, useState } from 'react'
+import About from '../../componnets/About'
+import Loader from '../../componnets/ui/loader';
+
+const Page = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ function Page() {
     );
   }
 
-  return <ContactSupport />;
+  return <About />;
 }
 
-export default Page;
+export default Page

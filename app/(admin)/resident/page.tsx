@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
-import About from '../componnets/About'
-import Loader from '../componnets/ui/loader';
+import Loader from '../../componnets/ui/loader';
+import Resident from '@/app/componnets/resident/Resident';
 
 const Page = () => {
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ const Page = () => {
     );
   }
 
-  return <About />;
+  return <Resident />;
 }
 
 export default Page
