@@ -6,6 +6,7 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
+import SvgIcon from "../shared/SvgIcon";
 // import AddWorkerForm from "./AddWorkerForm";
 
 /* ================= TYPES ================= */
@@ -186,10 +187,10 @@ const Worker = () => {
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
                       <button className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200">
-                        <FiEdit2 size={14} />
+                        <SvgIcon name="Edit-Icon" size={16} />
                       </button>
                       <button className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200">
-                        <FiTrash2 size={14} />
+                        <SvgIcon name="delete-icon" size={16} />
                       </button>
                     </div>
                   </td>

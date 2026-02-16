@@ -6,6 +6,8 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import AddResidentForm from "./AddResidentForm";
+import SvgIcon from "../shared/SvgIcon";
+import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 
@@ -31,6 +33,9 @@ type CommercialType = {
 /* ================= COMPONENT ================= */
 
 const Resident = () => {
+
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState<
     "commercial" | "resident"
   >("commercial");
@@ -117,7 +122,7 @@ const Resident = () => {
 
      <div className="flex justify-end mb-6">
         <button
-          onClick={() => setIsAddModalOpen(true)}
+            onClick={() => router.push("/residents/add-residents")}
           className="bg-gradient-to-t from-[rgba(48,179,61,0.7)] to-[rgba(48,179,61,1)] 
                      text-white text-sm font-semibold px-4 py-2 rounded-xl
                      hover:from-[rgba(48,179,61,0.7)] hover:to-[rgba(48,179,61,1)] 
@@ -274,10 +279,10 @@ const Resident = () => {
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
                       <button className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200">
-                        <FiEdit2 size={14} />
+                        <SvgIcon name="Edit-Icon" size={14} />
                       </button>
                       <button className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200">
-                        <FiTrash2 size={14} />
+                        <SvgIcon name="delete-icon" size={14} />
                       </button>
                     </div>
                   </td>

@@ -13,6 +13,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  activeIcon: React.ReactNode;
 }
 
 interface DropdownItem extends NavItem { }
@@ -24,11 +25,13 @@ const topNavItems: NavItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: <SvgIcon name="dashboard-icon" size={12} />,
+    activeIcon: <SvgIcon name="dashboard-icon-color" size={12} />,
   },
   {
     label: "Setup",
     href: "/setup",
     icon: <SvgIcon name="setup-icon" size={16} />,
+    activeIcon: <SvgIcon name="setup-icon-color" size={16} />,
   },
 ];
 
@@ -37,31 +40,37 @@ const membershipItems: DropdownItem[] = [
     label: "Residents",
     href: "/residents",
     icon: <SvgIcon name="residents-icon" size={20} />,
+    activeIcon: <SvgIcon name="residents-icon-color" size={20} />,
   },
   {
     label: "Vehicle",
     href: "/vehicle",
     icon: <SvgIcon name="vehicle-icon" size={16} />,
+    activeIcon: <SvgIcon name="vehicle-icon-color" size={16} />,
   },
   {
     label: "Visitor Pass",
     href: "/visitor",
     icon: <SvgIcon name="visitor-pass-icon" size={16} />,
+    activeIcon: <SvgIcon name="visitor-pass-icon-color" size={16} />,
   },
   {
     label: "Worker",
     href: "/worker",
     icon: <SvgIcon name="worker-icon" size={16} />,
+    activeIcon: <SvgIcon name="worker-icon-color" size={16} />,
   },
   {
     label: "Luggage Pass",
     href: "/luggage-pass",
     icon: <SvgIcon name="luggage-pass-icon" size={16} />,
+    activeIcon: <SvgIcon name="luggage-pass-icon-color" size={16} />,
   },
   {
     label: "Properties",
     href: "/properties",
     icon: <SvgIcon name="properties-icon" size={16} />,
+    activeIcon: <SvgIcon name="properties-icon-color" size={16} />,
   },
 ];
 
@@ -88,7 +97,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
         className={`transition-colors duration-150 ${isActive ? "text-[#30B33D]" : "text-gray-400 group-hover:text-gray-600"
           }`}
       >
-        {item.icon}
+         {isActive ? item.activeIcon : item.icon}
       </span>
 
     </Link>
@@ -121,7 +130,7 @@ function DropdownNavLink({
         className={`transition-colors duration-150 ${isActive ? "text-indigo-500" : "text-gray-400 group-hover:text-gray-500"
           }`}
       >
-        {item.icon}
+         {isActive ? item.activeIcon : item.icon} 
       </span>
     </Link>
   );
