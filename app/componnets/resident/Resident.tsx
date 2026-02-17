@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  FiBook,
   FiChevronLeft,
   FiChevronRight,
   FiEdit2,
@@ -18,21 +19,54 @@ import Others from "../others/Others";
 
 type ResidentType = {
   id: number;
-  name: string;
-  relation: string;
-  phone: string;
-  dob: string;
-  cnic: string;
-  residentCard: string;
+  fullName: string;
+  emailAddress: string;
+  password: string;
+  cellNumber: string;
+
+  category: string;
+  subCategory?: string;
+
+  phase: string;
+  zone: string;
+  khayaban: string;
+  floor?: string;
+
+  laneStreetNo: string;
+
+  plotNoNumeric?: string;
+  plotNoAlphabetic?: string;
+  plotNoAlphaNumeric?: string;
+
+  profilePicture?: File | null;
+  proofOfPossession?: File | null;
+  utilityBill?: File | null;
 };
 
 type CommercialType = {
   id: number;
-  companyName: string;
-  ownerName: string;
-  phone: string;
-  cnic: string;
-  officeNo: string;
+   fullName: string;
+  emailAddress: string;
+  password: string;
+  cellNumber: string;
+
+  category: string;
+  subCategory?: string;
+
+  phase: string;
+  zone: string;
+  khayaban: string;
+  floor?: string;
+
+  laneStreetNo: string;
+
+  plotNoNumeric?: string;
+  plotNoAlphabetic?: string;
+  plotNoAlphaNumeric?: string;
+
+  profilePicture?: File | null;
+  proofOfPossession?: File | null;
+  utilityBill?: File | null;
 };
 
 type MainTabType = "residential-commercial" | "educational-visitor" | "commercial-employee" | "house-help-worker" | "visitor" | "others";
@@ -57,17 +91,25 @@ const Resident = () => {
     { length: 45 },
     (_, i) => ({
       id: i + 1,
-      name: `Resident ${i + 1}`,
-      relation:
-        i % 3 === 0 ? "Son" : i % 3 === 1 ? "Daughter" : "Spouse",
-      phone: `0301-2346${(10 + i)
+      fullName: `Resident ${i + 1}`,
+      emailAddress: `resident${i + 1}@example.com`,
+      password: "password123",
+      cellNumber: `0301-2346${(10 + i)
         .toString()
         .padStart(2, "0")}`,
-      dob: `0${(i % 9) + 1}-0${(i % 11) + 1}-199${i % 10}`,
-      cnic: `35201-12345${i
-        .toString()
-        .padStart(2, "0")}-1`,
-      residentCard: `UID-92786453${1000 + i}`,
+      category: i % 2 === 0 ? "Resident" : "Commercial",
+      subCategory: i % 3 === 0 ? "Owner" : i % 3 === 1 ? "Tenant" : "Family Member",
+      phase: `Phase ${((i % 8) + 1)}`,
+      zone: `Zone ${((i % 4) + 1)}`,
+      khayaban: `Khayaban ${String.fromCharCode(65 + (i % 26))}`,
+      floor: i % 10 === 0 ? undefined : `${(i % 10) + 1}`,
+      laneStreetNo: `Lane ${(i % 20) + 1}`,
+      plotNoNumeric: `${((i % 100) + 1)}`,
+      plotNoAlphabetic: String.fromCharCode(65 + (i % 26)),
+      plotNoAlphaNumeric: i % 3 === 0 ? undefined : `${(i % 10)}-${String.fromCharCode(65 + (i % 26))}`,
+      profilePicture: null,
+      proofOfPossession: null,
+      utilityBill: null,
     })
   );
 
@@ -75,15 +117,25 @@ const Resident = () => {
     { length: 32 },
     (_, i) => ({
       id: i + 1,
-      companyName: `Company ${i + 1}`,
-      ownerName: `Owner ${i + 1}`,
-      phone: `0300-5678${(10 + i)
+      fullName: `Com-User ${i + 1}`,
+      emailAddress: `commercial${i + 1}@example.com`,
+      password: "password123",
+      cellNumber: `0300-5678${(10 + i)
         .toString()
         .padStart(2, "0")}`,
-      cnic: `42101-76543${i
-        .toString()
-        .padStart(2, "0")}-1`,
-      officeNo: `Office ${100 + i}`,
+      category: "Commercial",
+      subCategory: i % 3 === 0 ? "Retail" : i % 3 === 1 ? "Office" : "Service",
+      phase: `Phase ${((i % 8) + 1)}`,
+      zone: `Zone ${((i % 4) + 1)}`,
+      khayaban: `Commercial ${String.fromCharCode(65 + (i % 26))}`,
+      floor: i % 10 === 0 ? undefined : `${(i % 10) + 1}`,
+      laneStreetNo: `Street ${(i % 20) + 1}`,
+      plotNoNumeric: `${((i % 100) + 1)}`,
+      plotNoAlphabetic: String.fromCharCode(65 + (i % 26)),
+      plotNoAlphaNumeric: i % 3 === 0 ? undefined : `${(i % 10)}-${String.fromCharCode(65 + (i % 26))}`,
+      profilePicture: null,
+      proofOfPossession: null,
+      utilityBill: null,
     })
   );
 
@@ -273,25 +325,28 @@ const Resident = () => {
             {/* Table Body */}
             <div className="overflow-x-auto">
               <table className="min-w-full">
-                <thead className="bg-gray-50 text-xs uppercase">
+                <thead className="bg-gray-50 text-xs">
                   <tr>
                     {activeTab === "resident" ? (
                       <>
-                        <th className="px-4 py-3 text-left">Name</th>
-                        <th className="px-4 py-3 text-left">Relation</th>
-                        <th className="px-4 py-3 text-left">Phone</th>
-                        <th className="px-4 py-3 text-left">DOB</th>
-                        <th className="px-4 py-3 text-left">CNIC</th>
-                        <th className="px-4 py-3 text-left">Resident Card</th>
+                        <th className="px-4 py-3 text-left">Full Name</th>
+                        <th className="px-4 py-3 text-left">Email Address</th>
+                        <th className="px-4 py-3 text-left">Cell Number</th>
+                        <th className="px-4 py-3 text-left">Category</th>
+                        <th className="px-4 py-3 text-left">Phase</th>
+                        <th className="px-4 py-3 text-left">Zone</th>
+                        <th className="px-4 py-3 text-left">Khayaban</th>
                         <th className="px-4 py-3 text-center">Action</th>
                       </>
                     ) : (
                       <>
-                        <th className="px-4 py-3 text-left">Company Name</th>
-                        <th className="px-4 py-3 text-left">Owner Name</th>
-                        <th className="px-4 py-3 text-left">Phone</th>
-                        <th className="px-4 py-3 text-left">CNIC</th>
-                        <th className="px-4 py-3 text-left">Office No.</th>
+                        <th className="px-4 py-3 text-left">Full Name</th>
+                        <th className="px-4 py-3 text-left">Email Address</th>
+                        <th className="px-4 py-3 text-left">Cell Number</th>
+                        <th className="px-4 py-3 text-left">Category</th>
+                        <th className="px-4 py-3 text-left">Phase</th>
+                        <th className="px-4 py-3 text-left">Zone</th>
+                        <th className="px-4 py-3 text-left">Khayaban</th>
                         <th className="px-4 py-3 text-center">Action</th>
                       </>
                     )}
@@ -307,51 +362,60 @@ const Resident = () => {
                       {activeTab === "resident" ? (
                         <>
                           <td className="px-4 py-3 text-sm">
-                            {(item as ResidentType).name}
+                            {(item as ResidentType).fullName}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {(item as ResidentType).relation}
+                            {(item as ResidentType).emailAddress}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {item.phone}
+                            {(item as ResidentType).cellNumber}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {(item as ResidentType).dob}
+                            {(item as ResidentType).category}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {item.cnic}
+                            {(item as ResidentType).phase}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {(item as ResidentType).residentCard}
+                            {(item as ResidentType).zone}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {(item as ResidentType).khayaban}
                           </td>
                         </>
                       ) : (
                         <>
                           <td className="px-4 py-3 text-sm">
-                            {(item as CommercialType).companyName}
+                            {(item as CommercialType).fullName}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {(item as CommercialType).ownerName}
+                            {(item as CommercialType).emailAddress}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {item.phone}
+                            {(item as CommercialType).cellNumber}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {item.cnic}
+                            {(item as CommercialType).category}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {(item as CommercialType).officeNo}
+                            {(item as CommercialType).phase}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {(item as CommercialType).zone}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {(item as CommercialType).khayaban}
                           </td>
                         </>
                       )}
 
                       <td className="px-4 py-3 text-center">
                         <div className="flex justify-center gap-3">
+                           <button className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200">
+                                <FiBook size={14} />
+                            </button>
                           <button className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200">
                             <SvgIcon name="Edit-Icon" size={14} />
-                          </button>
-                          <button className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200">
-                            <SvgIcon name="delete-icon" size={14} />
                           </button>
                         </div>
                       </td>

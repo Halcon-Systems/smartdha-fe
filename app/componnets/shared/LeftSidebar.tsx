@@ -37,7 +37,7 @@ const topNavItems: NavItem[] = [
 
 const membershipItems: DropdownItem[] = [
   {
-    label: "Residents",
+    label: "Member Type",
     href: "/residents",
     icon: <SvgIcon name="residents-icon" size={20} />,
     activeIcon: <SvgIcon name="residents-icon-color" size={20} />,

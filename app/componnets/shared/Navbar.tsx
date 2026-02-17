@@ -9,7 +9,7 @@ import SvgIcon from "./SvgIcon";
 const routeLabels: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/setup": "Setup",
-  "/residents": "Residents",
+  "/residents": "Member Type",
   "/vehicle": "Vehicle",
   "/visitor-pass": "Visitor Pass",
   "/worker": "Worker",
