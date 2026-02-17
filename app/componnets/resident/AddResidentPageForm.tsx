@@ -7,19 +7,23 @@ type Tab = "resident" | "commercial";
 type FormData = {
   selectType: string;
   searchQuery: string;
-  relation: string;
   fullName: string;
-  fatherName: string;
-  dob: string;
+  password: string;
+  emailAddress: string;
   cellNumber: string;
-  cnic: string;
-  companyName: string;
-  ownerName: string;
-  commercialPhone: string;
-  commercialCnic: string;
-  officeNo: string;
-  ntntax: string;
-  businessType: string;
+  category: string;
+  subCategory: string;
+  phase: string;
+  zone: string;
+  khayaban: string;
+  laneStreetNo: string;
+  floor: string;
+  plotNoNumeric: string;
+  plotNoAlphabetic: string;
+  plotNoAlphaNumeric: string;
+  profilePicture: File | null;
+  proofOfPossession: File | null;
+  utilityBill: File | null;
 };
 
 const AddResidentPageForm: React.FC<{
@@ -30,25 +34,34 @@ const AddResidentPageForm: React.FC<{
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [proofOfPossession, setProofOfPossession] = useState<File | null>(null);
+  const [utilityBill, setUtilityBill] = useState<File | null>(null);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
-  const [relationDropdownOpen, setRelationDropdownOpen] = useState<boolean>(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState<boolean>(false);
+  const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState<boolean>(false);
+  const [phaseDropdownOpen, setPhaseDropdownOpen] = useState<boolean>(false);
+  const [zoneDropdownOpen, setZoneDropdownOpen] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
     selectType: "Resident/Commercial",
     searchQuery: "",
-    relation: "",
     fullName: "",
-    fatherName: "",
-    dob: "",
+    password: "",
+    emailAddress: "",
     cellNumber: "",
-    cnic: "",
-    companyName: "",
-    ownerName: "",
-    commercialPhone: "",
-    commercialCnic: "",
-    officeNo: "",
-    ntntax: "",
-    businessType: "",
+    category: "",
+    subCategory: "",
+    phase: "",
+    zone: "",
+    khayaban: "",
+    laneStreetNo: "",
+    floor: "",
+    plotNoNumeric: "",
+    plotNoAlphabetic: "",
+    plotNoAlphaNumeric: "",
+    profilePicture: null,
+    proofOfPossession: null,
+    utilityBill: null,
   });
 
   const handleInputChange = (
@@ -61,10 +74,20 @@ const AddResidentPageForm: React.FC<{
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setProfilePicture(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setProfilePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      const fieldName = e.target.name;
+      
+      if (fieldName === 'profilePicture') {
+        setProfilePicture(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setProfilePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      } else if (fieldName === 'proofOfPossession') {
+        setProofOfPossession(file);
+      } else if (fieldName === 'utilityBill') {
+        setUtilityBill(file);
+      }
+      
+      setFormData((prev) => ({ ...prev, [fieldName]: file }));
     }
   };
 
@@ -74,13 +97,13 @@ const AddResidentPageForm: React.FC<{
     // Handle form submission here
   };
 
-  const relations: string[] = [
-    "Spouse", "Son", "Daughter", "Brother", "Mother", "Father", "Sister",
-  ];
-
-  const businessTypes: string[] = [
-    "Retail", "Office", "Restaurant", "Medical", "Education", "Other",
-  ];
+  const categories: string[] = ["Resident", "Commercial"];
+  const subCategories: { [key: string]: string[] } = {
+    Resident: ["Owner", "Tenant", "Family Member"],
+    Commercial: ["Retail", "Office", "Restaurant", "Service"]
+  };
+  const phases: string[] = ["Phase 1", "Phase 2", "Phase 3", "Phase 4", "Phase 5", "Phase 6", "Phase 7", "Phase 8"];
+  const zones: string[] = ["Zone A", "Zone B", "Zone C", "Zone D"];
 
   // Reusable field box
   const FieldBox = ({ children }: { children: React.ReactNode }) => (
@@ -141,280 +164,389 @@ const AddResidentPageForm: React.FC<{
         {/* Form */}
         <form onSubmit={handleSubmit}>
 
-          {/* Row 1: Select Type + Search */}
+          {/* Row 1: Full Name + Email Address */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-
-            {/* Select Type */}
             <FieldBox>
-              <FieldLabel text="Select Type" required />
+              <FieldLabel text="Full Name" required />
+              <TextInput name="fullName" value={formData.fullName} placeholder="Full Name here" required />
+            </FieldBox>
+
+            <FieldBox>
+              <FieldLabel text="Email Address" required />
+              <TextInput name="emailAddress" value={formData.emailAddress} placeholder="Email Address here" type="email" required />
+            </FieldBox>
+          </div>
+
+          {/* Row 2: Password + Cell Number */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="Password" required />
+              <TextInput name="password" value={formData.password} placeholder="Password here" type="password" required />
+            </FieldBox>
+
+            <FieldBox>
+              <FieldLabel text="Add Cell Number" required />
+              <TextInput name="cellNumber" value={formData.cellNumber} placeholder="0300-1234567" type="tel" required />
+            </FieldBox>
+          </div>
+
+          {/* Row 3: Category + Sub-Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="Category" required />
               <div
                 className="flex justify-between items-center cursor-pointer"
-                onClick={() => setTypeDropdownOpen(!typeDropdownOpen)}
+                onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
               >
-                <span className="text-sm text-gray-500">Resident/Commercial</span>
+                <span className={`text-sm ${formData.category ? "text-gray-700" : "text-gray-400"}`}>
+                  {formData.category || "Select (Resident/Commercial)"}
+                </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
-              {typeDropdownOpen && (
+              {categoryDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {(["Resident", "Commercial"] as const).map((type) => (
+                  {categories.map((cat) => (
                     <div
-                      key={type}
+                      key={cat}
                       className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
                       onClick={() => {
-                        setActiveTab(type.toLowerCase() as Tab);
-                        setTypeDropdownOpen(false);
+                        setFormData((p) => ({ ...p, category: cat, subCategory: "" }));
+                        setCategoryDropdownOpen(false);
                       }}
                     >
-                      {type}
+                      {cat}
                     </div>
                   ))}
                 </div>
               )}
             </FieldBox>
 
-            {/* Search */}
             <FieldBox>
-              <FieldLabel text="Search (if already registered)" />
-              <div className="flex justify-between items-center gap-2">
-                <input
-                  type="text"
-                  name="searchQuery"
-                  value={formData.searchQuery}
-                  onChange={handleInputChange}
-                  placeholder="Type Membership No. / CNIC / Reg. Cell No."
-                  className="flex-1 text-xs text-gray-400 placeholder-gray-400 outline-none bg-transparent"
-                />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" className="shrink-0">
+              <FieldLabel text="Sub-Category" />
+              <div
+                className="flex justify-between items-center cursor-pointer"
+                onClick={() => setSubCategoryDropdownOpen(!subCategoryDropdownOpen)}
+              >
+                <span className={`text-sm ${formData.subCategory ? "text-gray-700" : "text-gray-400"}`}>
+                  {formData.subCategory || "Select Type"}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
+              {subCategoryDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
+                  {(subCategories[formData.category] || []).map((subCat) => (
+                    <div
+                      key={subCat}
+                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                      onClick={() => {
+                        setFormData((p) => ({ ...p, subCategory: subCat }));
+                        setSubCategoryDropdownOpen(false);
+                      }}
+                    >
+                      {subCat}
+                    </div>
+                  ))}
+                </div>
+              )}
             </FieldBox>
           </div>
 
-          {/* ── RESIDENT FIELDS ── */}
-          {activeTab === "resident" ? (
-            <>
-              {/* Row 2: Relation + Full Name */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FieldBox>
-                  <FieldLabel text="Select Relation" required />
-                  <div
-                    className="flex justify-between items-center cursor-pointer"
-                    onClick={() => setRelationDropdownOpen(!relationDropdownOpen)}
-                  >
-                    <span className={`text-sm ${formData.relation ? "text-gray-700" : "text-gray-400"}`}>
-                      {formData.relation || "Spouse, Son, Daughter, Brother, Mother, ..."}
-                    </span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </div>
-                  {relationDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                      {relations.map((rel) => (
-                        <div
-                          key={rel}
-                          className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                          onClick={() => {
-                            setFormData((p) => ({ ...p, relation: rel }));
-                            setRelationDropdownOpen(false);
-                          }}
-                        >
-                          {rel}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </FieldBox>
-
-                <FieldBox>
-                  <FieldLabel text="Full Name" required />
-                  <TextInput name="fullName" value={formData.fullName} placeholder="Full Name here" required />
-                </FieldBox>
+          {/* Row 4: Phase + Zone */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="Phase" required />
+              <div
+                className="flex justify-between items-center cursor-pointer"
+                onClick={() => setPhaseDropdownOpen(!phaseDropdownOpen)}
+              >
+                <span className={`text-sm ${formData.phase ? "text-gray-700" : "text-gray-400"}`}>
+                  {formData.phase || "Select here"}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
-
-              {/* Row 3: Father Name + DOB */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FieldBox>
-                  <FieldLabel text="Father / Husband Name" required />
-                  <TextInput name="fatherName" value={formData.fatherName} placeholder="Full Name here" required />
-                </FieldBox>
-
-                <FieldBox>
-                  <FieldLabel text="Date of Birth (DOB)" required />
-                  <div className="flex items-center justify-between gap-2">
-                    <input
-                      type="date"
-                      name="dob"
-                      value={formData.dob}
-                      onChange={handleInputChange}
-                      required
-                      className={`flex-1 text-sm outline-none bg-transparent ${formData.dob ? "text-gray-700" : "text-gray-400"}`}
-                    />
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#30B33D" strokeWidth="2" className="shrink-0">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                  </div>
-                </FieldBox>
-              </div>
-
-              {/* Row 4: Cell Number + CNIC */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FieldBox>
-                  <FieldLabel text="Add Cell Number" required />
-                  <TextInput name="cellNumber" value={formData.cellNumber} placeholder="0300-1234567" type="tel" required />
-                </FieldBox>
-
-                <FieldBox>
-                  <FieldLabel text="CNIC / NICOP No." />
-                  <TextInput name="cnic" value={formData.cnic} placeholder="(12345-1234567-1)" />
-                </FieldBox>
-              </div>
-
-              {/* Profile Picture */}
-              <div className="relative mb-6">
-                <div className="bg-white border-2 border-dashed border-[#60b8d4] rounded-xl px-4 py-3 flex items-center justify-between min-h-[80px]">
-
-                  {/* Left side */}
-                  <div className="flex-1">
-                    {/* Label row: "Profile Picture * +" */}
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="text-xs font-semibold text-[#30B33D]">Profile Picture</span>
-                      <span className="text-xs font-semibold text-red-500">*</span>
-                      <label
-                        htmlFor="profileUpload"
-                        className="flex items-center justify-center w-5 h-5 bg-[#30B33D] rounded-full cursor-pointer shrink-0 ml-0.5"
-                      >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5">
-                          <line x1="12" y1="5" x2="12" y2="19" />
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                        <input
-                          id="profileUpload"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Add Picture */}
-                    <label
-                      htmlFor="profileUpload2"
-                      className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-gray-700"
+              {phaseDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
+                  {phases.map((phase) => (
+                    <div
+                      key={phase}
+                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                      onClick={() => {
+                        setFormData((p) => ({ ...p, phase }));
+                        setPhaseDropdownOpen(false);
+                      }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
-                        <polyline points="16 16 12 12 8 16" />
-                        <line x1="12" y1="12" x2="12" y2="21" />
-                        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-                      </svg>
-                      Add Picture
-                      <input
-                        id="profileUpload2"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {/* No file chosen */}
-                    <p className="text-[11px] text-gray-400 mt-1">
-                      {profilePicture ? profilePicture.name : "No file chosen"}
-                    </p>
-                  </div>
-
-                  {/* Right: Avatar overlapping border */}
-                  <div className="w-[70px] h-[70px] rounded-full overflow-hidden border-[3px] border-white shrink-0 bg-gray-300 flex items-center justify-center -mr-2 shadow-md">
-                    {profilePreview ? (
-                      <img
-                        src={profilePreview}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <svg width="42" height="42" viewBox="0 0 100 100" fill="none">
-                        <circle cx="50" cy="35" r="18" fill="#9ca3af" />
-                        <ellipse cx="50" cy="80" rx="28" ry="20" fill="#9ca3af" />
-                      </svg>
-                    )}
-                  </div>
+                      {phase}
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </>
-          ) : (
-            /* ── COMMERCIAL FIELDS ── */
-            <>
-              {/* Row 1: Company + Owner */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FieldBox>
-                  <FieldLabel text="Company Name" required />
-                  <TextInput name="companyName" value={formData.companyName} placeholder="Company Name here" required />
-                </FieldBox>
-                <FieldBox>
-                  <FieldLabel text="Owner Name" required />
-                  <TextInput name="ownerName" value={formData.ownerName} placeholder="Owner Name here" required />
-                </FieldBox>
-              </div>
+              )}
+            </FieldBox>
 
-              {/* Row 2: Phone + CNIC */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FieldBox>
-                  <FieldLabel text="Phone Number" required />
-                  <TextInput name="commercialPhone" value={formData.commercialPhone} placeholder="0300-1234567" type="tel" required />
-                </FieldBox>
-                <FieldBox>
-                  <FieldLabel text="CNIC / NICOP No." />
-                  <TextInput name="commercialCnic" value={formData.commercialCnic} placeholder="(12345-1234567-1)" />
-                </FieldBox>
+            <FieldBox>
+              <FieldLabel text="Zone" required />
+              <div
+                className="flex justify-between items-center cursor-pointer"
+                onClick={() => setZoneDropdownOpen(!zoneDropdownOpen)}
+              >
+                <span className={`text-sm ${formData.zone ? "text-gray-700" : "text-gray-400"}`}>
+                  {formData.zone || "Select Type"}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
+              {zoneDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
+                  {zones.map((zone) => (
+                    <div
+                      key={zone}
+                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                      onClick={() => {
+                        setFormData((p) => ({ ...p, zone }));
+                        setZoneDropdownOpen(false);
+                      }}
+                    >
+                      {zone}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FieldBox>
+          </div>
 
-              {/* Row 3: Office No + NTN */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FieldBox>
-                  <FieldLabel text="Office No." required />
-                  <TextInput name="officeNo" value={formData.officeNo} placeholder="Office No. here" required />
-                </FieldBox>
-                <FieldBox>
-                  <FieldLabel text="NTN / Tax No." />
-                  <TextInput name="ntntax" value={formData.ntntax} placeholder="NTN / Tax Number" />
-                </FieldBox>
-              </div>
+          {/* Row 5: Khayaban + Floor */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="Khayaban" required />
+              <TextInput name="khayaban" value={formData.khayaban} placeholder="Type here" required />
+            </FieldBox>
 
-              {/* Row 4: Business Type */}
-              <div className="mb-6">
-                <FieldBox>
-                  <FieldLabel text="Business Type" required />
-                  <select
-                    name="businessType"
-                    value={formData.businessType}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full text-sm text-gray-700 outline-none bg-transparent cursor-pointer"
+            <FieldBox>
+              <FieldLabel text="Floor" required />
+              <TextInput name="floor" value={formData.floor} placeholder="2-Digits Only" />
+            </FieldBox>
+          </div>
+
+          {/* Row 5: Lane no + plot */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+            <FieldBox>
+              <FieldLabel text="Lane/Street No." required />
+              <TextInput name="laneStreetNo" value={formData.laneStreetNo} placeholder="Type here" required />
+            </FieldBox>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="Plot No." required />
+              <TextInput name="plotNoNumeric" value={formData.plotNoNumeric} placeholder="123 Only" required />
+            </FieldBox>
+
+            <FieldBox>
+              <FieldLabel text="Plot No." required />
+              <TextInput name="plotNoAlphabetic" value={formData.plotNoAlphabetic} placeholder="ABC Only" />
+            </FieldBox>
+
+            <FieldBox>
+              <FieldLabel text="Plot No." required />
+              <TextInput name="plotNoAlphaNumeric" value={formData.plotNoAlphaNumeric} placeholder="55-C" />
+            </FieldBox>
+           </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Profile Picture Upload */}
+          <div className="relative mb-6">
+            <div className="bg-white border-2 border-dashed rounded-xl px-4 py-3 flex items-center justify-between min-h-[80px]">
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-xs font-semibold text-[#30B33D]">Profile Picture</span>
+                  <span className="text-xs font-semibold text-red-500">*</span>
+                  <label
+                    htmlFor="profileUpload"
+                    className="flex items-center justify-center w-5 h-5 bg-[#30B33D] rounded-full cursor-pointer shrink-0 ml-0.5"
                   >
-                    <option value="">Select Business Type</option>
-                    {businessTypes.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </FieldBox>
-              </div>
-            </>
-          )}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <input
+                      id="profileUpload"
+                      name="profilePicture"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-center">
+                <label
+                  htmlFor="profileUpload2"
+                  className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-gray-700"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                  </svg>
+                  Add Picture
+                  <input
+                    id="profileUpload2"
+                    name="profilePicture"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {profilePicture ? profilePicture.name : "No file chosen"}
+                </p>
+              </div>
+
+              <div className="w-[70px] h-[70px] rounded-full overflow-hidden border-[3px] border-white shrink-0 bg-gray-300 flex items-center justify-center -mr-2 shadow-md">
+                {profilePreview ? (
+                  <img
+                    src={profilePreview}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <svg width="42" height="42" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="35" r="18" fill="#9ca3af" />
+                    <ellipse cx="50" cy="80" rx="28" ry="20" fill="#9ca3af" />
+                  </svg>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Proof of Possession Upload */}
+          <div className="relative mb-6">
+            <div className="bg-white border-2 border-dashed rounded-xl px-4 py-3 flex items-center justify-between min-h-[80px]">
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-xs font-semibold text-[#30B33D]">Proof of Possession</span>
+                  <label
+                    htmlFor="proofUpload"
+                    className="flex items-center justify-center w-5 h-5 bg-[#30B33D] rounded-full cursor-pointer shrink-0 ml-0.5"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <input
+                      id="proofUpload"
+                      name="proofOfPossession"
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <label
+                  htmlFor="proofUpload2"
+                  className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-gray-700"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                  </svg>
+                  Ownership or Rent Agreement
+                  <input
+                    id="proofUpload2"
+                    name="proofOfPossession"
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {proofOfPossession ? proofOfPossession.name : "No file chosen"}
+                </p>
+              </div>
+            </div>
+          </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Utility Bill Upload */}
+          <div className="relative mb-6">
+            <div className="bg-white border-2 border-dashed rounded-xl px-4 py-3 flex items-center justify-between min-h-[80px]">
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-xs font-semibold text-[#30B33D]">Attach Utility Bill</span>
+                  <label
+                    htmlFor="utilityUpload"
+                    className="flex items-center justify-center w-5 h-5 bg-[#30B33D] rounded-full cursor-pointer shrink-0 ml-0.5"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <input
+                      id="utilityUpload"
+                      name="utilityBill"
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <label
+                  htmlFor="utilityUpload2"
+                  className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-gray-700"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                  </svg>
+                  K.E or Gas Bill
+                  <input
+                    id="utilityUpload2"
+                    name="utilityBill"
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {utilityBill ? utilityBill.name : "No file chosen"}
+                </p>
+              </div>
+            </div>
+          </div>
+          </div>
+          {/* Submit Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="py-3 rounded-xl bg-white text-[#30B33D] text-[15px] font-semibold cursor-pointer shadow-sm hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
-              className="px-8 py-3 rounded-xl bg-[#30B33D] text-white text-[15px] font-semibold cursor-pointer shadow-md hover:bg-[#28a035] transition"
+              className="py-3 rounded-xl bg-[#30B33D] text-white text-[15px] font-semibold cursor-pointer shadow-md hover:bg-[#28a035] transition"
             >
-              Add Resident
+              Add
             </button>
           </div>
         </form>
