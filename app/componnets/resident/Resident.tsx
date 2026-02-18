@@ -411,7 +411,10 @@ const Resident = () => {
 
                       <td className="px-4 py-3 text-center">
                         <div className="flex justify-center gap-3">
-                           <button className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200">
+                           <button 
+                             onClick={() => router.push(`/residents/${item.id}`)}
+                             className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200"
+                           >
                                 <FiBook size={14} />
                             </button>
                           <button className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200">
