@@ -14,13 +14,13 @@ import SvgIcon from "../shared/SvgIcon";
 type WorkerType = {
   id: number;
   name: string;
-  workerId: string;
-  department: string;
-  designation: string;
+  jobType: string;
   phone: string;
+  dob: string;
   cnic: string;
-  shift: string;
-  status: string;
+  workerCardNo: string;
+  policeVerification: string;
+  cardDelivery: string;
 };
 
 /* ================= COMPONENT ================= */
@@ -39,13 +39,13 @@ const Worker = () => {
     (_, i) => ({
       id: i + 1,
       name: `Worker ${i + 1}`,
-      workerId: `WRK-${1000 + i}`,
-      department: i % 3 === 0 ? "Security" : i % 3 === 1 ? "Maintenance" : "Housekeeping",
-      designation: i % 3 === 0 ? "Guard" : i % 3 === 1 ? "Technician" : "Cleaner",
+      jobType: i % 3 === 0 ? "House Helper" : i % 3 === 1 ? "Driver" : "Security Guard",
       phone: `0300-123${(100 + i).toString().padStart(3, "0")}`,
+      dob: `${15 + (i % 20)}/${(i % 12) + 1}/${1980 + (i % 25)}`,
       cnic: `35201-12345${i.toString().padStart(3, "0")}-${(i % 9) + 1}`,
-      shift: i % 3 === 0 ? "Morning" : i % 3 === 1 ? "Evening" : "Night",
-      status: i % 4 === 0 ? "Inactive" : "Active",
+      workerCardNo: `WRK-92786453000${i.toString().padStart(3, "0")}`,
+      policeVerification: i % 2 === 0 ? "Yes" : "No",
+      cardDelivery: i % 3 === 0 ? "Delivered" : i % 3 === 1 ? "Pending" : "Not Required",
     })
   );
 
@@ -128,20 +128,20 @@ const Worker = () => {
         </div>
 
         {/* Table Body */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50 text-xs uppercase">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <table className="min-w-full" style={{ minWidth: '1200px' }}>
+            <thead className="bg-gray-50 text-xs">
               <tr>
                 <>
-                  <th className="px-4 py-3 text-left">Name</th>
-                  <th className="px-4 py-3 text-left">ID</th>
-                  <th className="px-4 py-3 text-left">Department</th>
-                  <th className="px-4 py-3 text-left">Designation</th>
-                  <th className="px-4 py-3 text-left">Phone</th>
-                  <th className="px-4 py-3 text-left">CNIC</th>
-                  <th className="px-4 py-3 text-center">Shift</th>
-                  <th className="px-4 py-3 text-center">Status</th>
-                  <th className="px-4 py-3 text-center">Action</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Name</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '140px' }}>Job Type</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '130px' }}>Phone</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '100px' }}>DOB</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '160px' }}>CNIC/nICOP No.</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '180px' }}>Worker Card No.</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '150px' }}>Police Verification</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '170px' }}>Worker's Card Delivery</th>
+                  <th className="px-4 py-3 text-center font-bold text-gray-900" style={{ width: '100px' }}>Action</th>
                 </>
               </tr>
             </thead>
@@ -156,34 +156,26 @@ const Worker = () => {
                     {item.name}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.workerId}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.department}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.designation}
+                    {item.jobType}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {item.phone}
                   </td>
                   <td className="px-4 py-3 text-sm">
+                    {item.dob}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
                     {item.cnic}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.shift}
+                    {item.workerCardNo}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      item.status === 'Active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {item.status}
-                </span>
+                    {item.policeVerification}
                   </td>
-                  
-
+                  <td className="px-4 py-3 text-sm">
+                    {item.cardDelivery}
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
                       <button className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200">
