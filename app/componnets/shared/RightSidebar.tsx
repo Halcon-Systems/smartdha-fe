@@ -168,8 +168,8 @@ export default function RightSidebar() {
           {/* Logo */}
           <div className="shadow-[0_0_15px_rgba(0,0,0,0.25)] rounded-full px-2.5 py-1.5">
             <Image
-              src="/logos/dha-logo.png"
-              alt="DHA Logo"
+              src="/icons/Image.png"
+              alt="Profile Picture"
               width={80}
               height={80}
               className='mb-2 flex-shrink-0'
@@ -177,7 +177,7 @@ export default function RightSidebar() {
           </div>
 
           <div className="text-center leading-tight py-2">
-            <p className="text-[18px] font-semibold text-[#30B33D]">DHA Smart City</p>
+            <p className="text-[18px] font-semibold text-[#30B33D]">Syed Alam Mazhar</p>
           </div>
 
           {/* Contact mini-card */}
@@ -187,7 +187,7 @@ export default function RightSidebar() {
               <div className="bg-white p-2 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.25)]">
                 <SvgIcon name="phone-icon" size={12} className="" />
               </div>
-              <span className="text-[12px] text-black font-medium">+92 300 1234567</span>
+              <span className="text-[12px] text-black font-medium">+92 21 76566401-2</span>
             </div>
             <div className="w-full h-px bg-[#ECECEC]" />
             <div className="flex items-center gap-3  px-3 pb-2 pt-1">
@@ -195,7 +195,7 @@ export default function RightSidebar() {
               <div className="bg-white px-2 py-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.25)]">
                 <SvgIcon name="email-icon" size={12} className="" />
               </div>
-              <span className="text-[12px] text-black font-medium">info@dhasmartcity.com</span>
+              <span className="text-[12px] text-black font-medium">syed@gmail.com</span>
             </div>
           </div>
 
