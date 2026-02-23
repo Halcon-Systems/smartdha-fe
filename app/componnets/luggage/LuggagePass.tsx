@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiChevronLeft,
@@ -7,6 +7,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import SvgIcon from "../shared/SvgIcon";
+import { luggageService } from "../../services/luggage-service";
 
 /* ================= TYPES ================= */
 
@@ -38,39 +39,60 @@ const LuggagePass = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [upcomingLuggage, setUpcomingLuggage] = useState<any[]>([]);
+  const [previousLuggage, setPreviousLuggage] = useState<any[]>([]);
 
-  /* ================= LARGE DUMMY DATA ================= */
+  // Load data from API
+  const loadLuggagePasses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await luggageService.getAllLuggagePasses();
+      
+      if (response.success) {
+        setUpcomingLuggage(response.upcomingLuggage || []);
+        setPreviousLuggage(response.previousLuggage || []);
+      } else {
+        setError(response.message || "Failed to load luggage passes");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const dummyPreviousLuggage: PreviousLuggageType[] = Array.from(
-    { length: 45 },
-    (_, i) => ({
-      id: i + 1,
-      name: `Luggage Owner ${i + 1}`,
-      vehicleInfo: i % 2 === 0 ? "Honda Civic ABC-123" : "Toyota Corolla XYZ-789",
-      visitDetail: i % 3 === 0 ? "Luggage Delivery" : i % 3 === 1 ? "Package Pickup" : "Item Transfer",
-      validity: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
-      cnic: `35201-12345${i.toString().padStart(2, "0")}-1`,
-    })
-  );
+  useEffect(() => {
+    loadLuggagePasses();
+  }, []);
 
-  const dummyUpcomingLuggage: UpcomingLuggageType[] = Array.from(
-    { length: 32 },
-    (_, i) => ({
-      id: i + 1,
-      name: `Luggage Owner ${i + 1}`,
-      vehicleInfo: i % 2 === 0 ? "Suzuki Mehran DEF-456" : "Honda CD70 GHI-012",
-      visitDetail: i % 3 === 0 ? "Luggage Drop-off" : i % 3 === 1 ? "Package Collection" : "Goods Transport",
-      validity: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
-      cnic: `42101-76543${i.toString().padStart(2, "0")}-1`,
-    })
-  );
+  // Reload data when tab changes
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page
+    loadLuggagePasses();
+  }, [activeTab]);
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch {
+      return dateString;
+    }
+  };
 
   /* ================= PAGINATION ================= */
 
   const activeData =
     activeTab === "Previous Luggage"
-      ? dummyPreviousLuggage
-      : dummyUpcomingLuggage;
+      ? previousLuggage
+      : upcomingLuggage;
 
   const totalPages = Math.ceil(
     activeData.length / rowsPerPage
@@ -174,8 +196,23 @@ const LuggagePass = () => {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mx-4 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-sm text-gray-500">Loading...</div>
+          </div>
+        )}
+
         {/* Table Body */}
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        {!loading && (
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <table className="min-w-full" style={{ minWidth: '900px' }}>
             <thead className="bg-gray-50 text-xs">
               <tr>
@@ -206,7 +243,7 @@ const LuggagePass = () => {
                     {item.visitDetail}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.validity}
+                    {formatDate(item.toDate)}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {item.cnic}
@@ -227,51 +264,54 @@ const LuggagePass = () => {
             </tbody>
           </table>
         </div>
+        )}
 
         {/* ================= GREEN PAGINATION ================= */}
-        <div className="px-4 py-3 border-t flex justify-between items-center">
-          <div className="text-xs text-gray-600">
-            Showing {startIndex + 1} to{" "}
-            {Math.min(endIndex, activeData.length)} of{" "}
-            {activeData.length}
+        {!loading && (
+          <div className="px-4 py-3 border-t flex justify-between items-center">
+            <div className="text-xs text-gray-600">
+              Showing {startIndex + 1} to{" "}
+              {Math.min(endIndex, activeData.length)} of{" "}
+              {activeData.length}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.max(1, p - 1))
+                }
+                disabled={currentPage === 1}
+                className={`p-2 rounded border transition ${
+                  currentPage === 1
+                    ? "border-gray-300 text-gray-300 cursor-not-allowed"
+                    : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
+                }`}
+              >
+                <FiChevronLeft />
+              </button>
+
+              <span className="px-4 py-1.5 rounded bg-[#30B33D] text-white text-sm font-semibold">
+                {currentPage} / {totalPages}
+              </span>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(totalPages, p + 1)
+                  )
+                }
+                disabled={currentPage === totalPages}
+                className={`p-2 rounded border transition ${
+                  currentPage === totalPages
+                    ? "border-gray-300 text-gray-300 cursor-not-allowed"
+                    : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
+                }`}
+              >
+                <FiChevronRight />
+              </button>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() =>
-                setCurrentPage((p) => Math.max(1, p - 1))
-              }
-              disabled={currentPage === 1}
-              className={`p-2 rounded border transition ${
-                currentPage === 1
-                  ? "border-gray-300 text-gray-300 cursor-not-allowed"
-                  : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
-              }`}
-            >
-              <FiChevronLeft />
-            </button>
-
-            <span className="px-4 py-1.5 rounded bg-[#30B33D] text-white text-sm font-semibold">
-              {currentPage} / {totalPages}
-            </span>
-
-            <button
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.min(totalPages, p + 1)
-                )
-              }
-              disabled={currentPage === totalPages}
-              className={`p-2 rounded border transition ${
-                currentPage === totalPages
-                  ? "border-gray-300 text-gray-300 cursor-not-allowed"
-                  : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
-              }`}
-            >
-              <FiChevronRight />
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

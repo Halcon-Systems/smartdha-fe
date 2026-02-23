@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { vehicleService } from "../../services/vehicle-service";
+import { CreateVehicleCommand } from "../../types/api";
 import SvgIcon from "../shared/SvgIcon";
-// import { Plus, ChevronDown, ImagePlus, X } from "lucide-react";
+import SuccessModal from "../shared/SuccessModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface VehicleFormData {
@@ -73,11 +76,10 @@ function FieldBox({ children, className = "" }: { children: React.ReactNode; cla
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AddVehicleForm({
   onCancel,
-  onAdd,
 }: {
   onCancel?: () => void;
-  onAdd?: (data: VehicleFormData) => void;
 }) {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<VehicleFormData>({
@@ -93,6 +95,10 @@ export default function AddVehicleForm({
 
   const [yearOpen, setYearOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const set = (field: keyof VehicleFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -110,8 +116,50 @@ export default function AddVehicleForm({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleAdd = () => {
-    onAdd?.(form);
+  const handleModalClose = (): void => {
+    setShowSuccessModal(false);
+    router.push('/vehicle');
+  };
+
+  const handleAdd = async (): Promise<void> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add attachment if provided
+      if (form.attachment) {
+        formData.append('Attachment', form.attachment);
+      }
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        LicenseNo: form.vehicleNoNum || '',
+        License: form.vehicleNoABC || '',
+        Year: form.year || '',
+        Color: form.color || '',
+        Make: form.make || '',
+        Model: form.model || '',
+        ETagId: form.licensePlate || '',
+        ValidTo: new Date().toISOString(), // Current date as validity
+      });
+
+      const response = await vehicleService.createVehicle(formData, params.toString());
+      
+      if (response.succeeded) {
+        // Show success modal
+        setSuccessMessage(response.message || "Vehicle created successfully!");
+        setShowSuccessModal(true);
+      } else {
+        setError(response.message || "Failed to create vehicle");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,6 +170,13 @@ export default function AddVehicleForm({
         <p className="text-[1ypx] font-semibold text-black mb-5">
           Please provide details below!
         </p>
+
+        {/* Error Messages */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         {/* ── Form grid ── */}
         <div className="flex flex-col gap-3">
@@ -331,17 +386,26 @@ export default function AddVehicleForm({
           <button
             type="button"
             onClick={handleAdd}
+            disabled={loading}
             className="
                 flex-1 py-2.5 rounded-xl
                 text-[13px] font-semibold text-white
                 bg-[#30B33D] hover:bg-green-600 active:bg-green-700
                 transition-all duration-150 shadow-sm
+                disabled:opacity-50 disabled:cursor-not-allowed
               "
           >
-            Add
+            {loading ? "Creating..." : "Add"}
           </button>
         </div>
 
+        {/* Success Modal */}
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={handleModalClose}
+          title="Vehicle Registration Successful"
+          message={successMessage}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { luggageService } from "../../services/luggage-service";
+import { CreateLuggagePassCommand } from "../../types/api";
+import SuccessModal from "../shared/SuccessModal";
 
 type FormData = {
   fullName: string;
@@ -12,7 +16,65 @@ type FormData = {
   validityDate: string;
 };
 
+// Reusable field box
+const FieldBox = ({ children }: { children: React.ReactNode }) => (
+  <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 relative">
+    {children}
+  </div>
+);
+
+// Reusable label
+const FieldLabel = ({
+  text,
+  required = false,
+  green = true,
+}: {
+  text: string;
+  required?: boolean;
+  green?: boolean;
+}) => (
+  <label className={`block text-xs font-semibold mb-1.5 ${green ? "text-[#30B33D]" : "text-gray-700"}`}>
+    {text} {required && <span className="text-red-500">*</span>}
+  </label>
+);
+
+// Reusable input
+const TextInput = React.memo(({
+  name,
+  value,
+  placeholder,
+  type = "text",
+  required = false,
+  maxLength,
+  pattern,
+  onChange,
+}: {
+  name: keyof FormData;
+  value: string;
+  placeholder: string;
+  type?: string;
+  required?: boolean;
+  maxLength?: number;
+  pattern?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+}) => (
+  <input
+    type={type}
+    name={name}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    required={required}
+    maxLength={maxLength}
+    pattern={pattern}
+    className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
+  />
+));
+
+TextInput.displayName = 'TextInput';
+
 const AddLuggagePass: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
     cnicNo: "",
@@ -23,71 +85,60 @@ const AddLuggagePass: React.FC = () => {
     validityDate: "",
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    },
+    []
+  );
+
+  const handleModalClose = (): void => {
+    setShowSuccessModal(false);
+    router.push('/luggage');
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    console.log("Form Data:", formData);
-    // Handle form submission here
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Combine vehicle parts for license plate
+      const vehicleLicensePlate = formData.vehicleNoAlpha && formData.vehicleNoNumeric 
+        ? `${formData.vehicleNoAlpha}-${formData.vehicleNoNumeric}`
+        : formData.licensePlate;
+
+      // Convert to API format
+      const luggagePassData: CreateLuggagePassCommand = {
+        name: formData.fullName,
+        cnic: formData.cnicNo,
+        vehicleLicensePlate: formData.licensePlate || undefined,
+        vehicleLicenseNo: formData.vehicleNoNumeric ? parseInt(formData.vehicleNoNumeric) : undefined,
+        description: formData.description || undefined,
+        ...(formData.validityDate && { validityDate: new Date(formData.validityDate).toISOString() }),
+      };
+
+      const response = await luggageService.createLuggagePass(luggagePassData);
+      
+      if (response.succeeded) {
+        // Show success modal
+        setSuccessMessage(response.data.message || "Luggage pass created successfully!");
+        setShowSuccessModal(true);
+      } else {
+        setError(response.data.message || "Failed to create luggage pass");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Reusable field box
-  const FieldBox = ({ children }: { children: React.ReactNode }) => (
-    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 relative">
-      {children}
-    </div>
-  );
-
-  // Reusable label
-  const FieldLabel = ({
-    text,
-    required = false,
-    green = true,
-  }: {
-    text: string;
-    required?: boolean;
-    green?: boolean;
-  }) => (
-    <label className={`block text-xs font-semibold mb-1.5 ${green ? "text-[#30B33D]" : "text-gray-700"}`}>
-      {text} {required && <span className="text-red-500">*</span>}
-    </label>
-  );
-
-  // Reusable input
-  const TextInput = ({
-    name,
-    value,
-    placeholder,
-    type = "text",
-    required = false,
-    maxLength,
-    pattern,
-  }: {
-    name: keyof FormData;
-    value: string;
-    placeholder: string;
-    type?: string;
-    required?: boolean;
-    maxLength?: number;
-    pattern?: string;
-  }) => (
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={handleInputChange}
-      placeholder={placeholder}
-      required={required}
-      maxLength={maxLength}
-      pattern={pattern}
-      className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
-    />
-  );
 
   return (
     <div className="w-full bg-[#F9FAFB] shadow-[0_0_15px_rgba(0,0,0,0.25)] rounded-lg p-6">
@@ -97,6 +148,13 @@ const AddLuggagePass: React.FC = () => {
         <div className="mb-6 flex justify-between items-center">
           <p className="text-lg font-semibold text-black">Please provide details below!</p>
         </div>
+
+        {/* Error Messages */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
@@ -110,6 +168,7 @@ const AddLuggagePass: React.FC = () => {
                 value={formData.fullName}
                 placeholder="Enter full name"
                 required
+                onChange={handleInputChange}
               />
             </FieldBox>
 
@@ -119,6 +178,7 @@ const AddLuggagePass: React.FC = () => {
                 name="cnicNo"
                 value={formData.cnicNo}
                 placeholder="12345-1234567-1"
+                onChange={handleInputChange}
               />
             </FieldBox>
           </div>
@@ -134,6 +194,7 @@ const AddLuggagePass: React.FC = () => {
                   placeholder="ABC" 
                   required 
                   maxLength={3}
+                  onChange={handleInputChange}
                 />
               </FieldBox>
 
@@ -146,6 +207,7 @@ const AddLuggagePass: React.FC = () => {
                   required 
                   type="text"
                   pattern="[0-9]*"
+                  onChange={handleInputChange}
                 />
               </FieldBox>
             </div>
@@ -156,6 +218,7 @@ const AddLuggagePass: React.FC = () => {
                   name="licensePlate"
                   value={formData.licensePlate}
                   placeholder="ABC-123"
+                  onChange={handleInputChange}
                 />
               </FieldBox>
               <div></div> {/* Empty div for alignment */}
@@ -191,6 +254,7 @@ const AddLuggagePass: React.FC = () => {
                 name="validityDate" 
                 value={formData.validityDate} 
                 placeholder="validity date" 
+                onChange={handleInputChange}
               />
                 </div>
               </FieldBox>
@@ -209,13 +273,22 @@ const AddLuggagePass: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="py-3 rounded-xl bg-[#30B33D] text-white text-[15px] font-semibold cursor-pointer shadow-md hover:bg-[#28a035] transition"
+              disabled={loading}
+              className="py-3 rounded-xl bg-[#30B33D] text-white text-[15px] font-semibold cursor-pointer shadow-md hover:bg-[#28a035] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Luggage Pass
+              {loading ? "Creating..." : "Add Luggage Pass"}
             </button>
           </div>
         </form>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleModalClose}
+        title="Luggage Registration Successful"
+        message={successMessage}
+      />
     </div>
   );
 };
