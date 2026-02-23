@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import SvgIcon from "../shared/SvgIcon";
 // import { Plus, ChevronDown, ImagePlus, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -24,7 +25,7 @@ const YEARS = Array.from({ length: 30 }, (_, i) =>
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
-    <label className="block text-[12px] font-medium text-gray-500">
+    <label className="block text-[12px] font-medium text-[#30B33D]">
       {label}
       {required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
@@ -252,7 +253,7 @@ export default function AddVehicleForm({
             >
               {/* Attachment header */}
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] font-medium text-gray-500">
+                <span className="text-[12px] font-medium text-[#30B33D]">
                   Attachment
                 </span>
                 <button
@@ -265,6 +266,7 @@ export default function AddVehicleForm({
                       transition-colors duration-150
                     "
                 >
+                   <SvgIcon name="add-icon" size={12} />
                   {/* <Plus size={13} className="text-gray-500" /> */}
                 </button>
               </div>
