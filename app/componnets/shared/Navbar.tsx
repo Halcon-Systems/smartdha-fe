@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import SvgIcon from "./SvgIcon";
+import Visitor from "../visitor/Visitor";
 // import { Search } from "lucide-react";
 
 // ─── Route label map ─────────────────────────────────────────────────────────
@@ -9,12 +10,20 @@ import SvgIcon from "./SvgIcon";
 const routeLabels: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/setup": "Setup",
-  "/residents": "Residents",
+  "/residents": "Member Type",
   "/vehicle": "Vehicle",
   "/visitor-pass": "Visitor Pass",
   "/worker": "Worker",
   "/luggage-pass": "Luggage Pass",
   "/properties": "Properties",
+  "/residents/add-educational-visitor": "Add Educational Visitor",
+  "/residents/add-resident": "Add Resident",
+  "/vehicle/add-vehicle": "Add Vehicle",
+  "/visitor-pass/add-visitor": "Add Visitor Pass",
+  "/worker/add-worker": "Add Worker",
+  "/residents/add-house-help-worker": "Add House Help Worker",
+  "/residents/add-visitor": "Add Visitor",
+  "/residents/add-others": "Add Others",
 };
 
 function getPageLabel(pathname: string): string {
