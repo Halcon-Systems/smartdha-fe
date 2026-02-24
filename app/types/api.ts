@@ -214,14 +214,20 @@ export interface DeleteVehicleCommand {
 }
 
 export interface Vehicle {
-  id: string;
+  id: string | null;
   color: string;
+  eTagId:string | null;
+  license: string;
+  licenseNo: number;
   make: string;
   model: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  year: string;
+  ownership: string | null;
+  isActive: boolean | null;
+  validTo: string;
+  validFrom: string;
 }
+
 
 // ─── Visitor Pass Types ───────────────────────────────────────────────────
 
@@ -258,6 +264,14 @@ export interface VisitorPass {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DeleteVisitorPassCommand {
+  id: string; // UUID
+}
+
+export interface GetVisitorPassGroupedQuery {
+  id?: string;
 }
 
 // ─── Worker Types ─────────────────────────────────────────────────────────

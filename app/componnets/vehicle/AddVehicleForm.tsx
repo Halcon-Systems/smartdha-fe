@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { vehicleService } from "../../services/vehicle-service";
-import { CreateVehicleCommand } from "../../types/api";
+import { CreateVehicleCommand, UpdateVehicleCommand, Vehicle } from "../../types/api";
 import SvgIcon from "../shared/SvgIcon";
 import SuccessModal from "../shared/SuccessModal";
 
@@ -99,6 +99,48 @@ export default function AddVehicleForm({
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Check if we're in edit mode
+  useEffect(() => {
+    const editData = localStorage.getItem('editVehicleData');
+    if (editData) {
+      try {
+        const { id } = JSON.parse(editData);
+        setEditingId(id);
+        setIsEditing(true);
+        loadVehicleData(id);
+      } catch (error) {
+        console.error('Error parsing edit data:', error);
+      }
+    }
+  }, []);
+
+  // Load vehicle data for editing
+  const loadVehicleData = async (id: string) => {
+    try {
+      setLoading(true);
+      const response = await vehicleService.getVehicleById(id);
+      if ((response as any).succeeded) {
+        const vehicle = (response as any).data;
+        setForm({
+          vehicleNoABC: vehicle.licenseNo?.toString().split('-')[0] || '',
+          vehicleNoNum: vehicle.licenseNo?.toString().split('-')[1] || '',
+          licensePlate: vehicle.licensePlate || '',
+          make: vehicle.make || '',
+          model: vehicle.model || '',
+          year: vehicle.year || '2001',
+          color: vehicle.color || '',
+          attachment: null,
+        });
+      }
+    } catch (error) {
+      setError('Failed to load vehicle data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const set = (field: keyof VehicleFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -118,6 +160,7 @@ export default function AddVehicleForm({
 
   const handleModalClose = (): void => {
     setShowSuccessModal(false);
+    localStorage.removeItem('editVehicleData');
     router.push('/vehicle');
   };
 
@@ -126,34 +169,53 @@ export default function AddVehicleForm({
     setError(null);
 
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      // Add attachment if provided
-      if (form.attachment) {
-        formData.append('Attachment', form.attachment);
-      }
+      if (isEditing && editingId) {
+        // Update existing vehicle
+        const formData = new FormData();
+        formData.append('Id', editingId);
+        formData.append('Color', form.color);
+        formData.append('Make', form.make);
+        formData.append('Model', form.model);
+        
+        if (form.attachment) {
+          formData.append('Attachment', form.attachment);
+        }
 
-      // Build query parameters
-      const params = new URLSearchParams({
-        LicenseNo: form.vehicleNoNum || '',
-        License: form.vehicleNoABC || '',
-        Year: form.year || '',
-        Color: form.color || '',
-        Make: form.make || '',
-        Model: form.model || '',
-        ETagId: form.licensePlate || '',
-        ValidTo: new Date().toISOString(), // Current date as validity
-      });
-
-      const response = await vehicleService.createVehicle(formData, params.toString());
-      
-      if (response.succeeded) {
-        // Show success modal
-        setSuccessMessage(response.message || "Vehicle created successfully!");
-        setShowSuccessModal(true);
+        const response = await vehicleService.updateVehicle(formData);
+        
+        if ((response as any).succeeded) {
+          setSuccessMessage((response as any).message || "Vehicle updated successfully!");
+          setShowSuccessModal(true);
+        } else {
+          setError((response as any).message || "Failed to update vehicle");
+        }
       } else {
-        setError(response.message || "Failed to create vehicle");
+        // Create new vehicle
+        const formData = new FormData();
+        
+        if (form.attachment) {
+          formData.append('Attachment', form.attachment);
+        }
+
+        const params = new URLSearchParams({
+          LicenseNo: form.vehicleNoNum || '',
+          License: form.vehicleNoABC || '',
+          Year: form.year || '',
+          Color: form.color || '',
+          Make: form.make || '',
+          Model: form.model || '',
+          ETagId: form.licensePlate || '',
+          ValidTo: new Date().toISOString(),
+        });
+
+        const response = await vehicleService.createVehicle(formData, params.toString());
+        
+        if (response.succeeded) {
+          setSuccessMessage(response.data || "Vehicle created successfully!");
+          setShowSuccessModal(true);
+        } else {
+          setError(response.data || "Failed to create vehicle");
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
@@ -395,7 +457,7 @@ export default function AddVehicleForm({
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
           >
-            {loading ? "Creating..." : "Add"}
+            {loading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update" : "Add")}
           </button>
         </div>
 

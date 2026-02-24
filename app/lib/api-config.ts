@@ -1,7 +1,7 @@
 // API Configuration for Backend Integration
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://gwp.dhakarachi.org',
-  swaggerUrl: process.env.NEXT_PUBLIC_SWAGGER_URL || 'https://gwp.dhakarachi.org/swagger',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dfpwebp.dhakarachi.org',
+  swaggerUrl: process.env.NEXT_PUBLIC_SWAGGER_URL || 'https://dfpwebp.dhakarachi.org/swagger',
   timeout: 10000,
 };
 
@@ -9,62 +9,68 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
-    LOGIN: '/api/auth/login',
-    LOGOUT: '/api/auth/logout',
-    REFRESH: '/api/auth/refresh',
-  },
-  // Residents
-  RESIDENTS: {
-    LIST: '/api/residents',
-    CREATE: '/api/residents',
-    UPDATE: (id: string) => `/api/residents/${id}`,
-    DELETE: (id: string) => `/api/residents/${id}`,
-  },
-  // Properties
-  PROPERTIES: {
-    LIST: '/api/properties',
-    CREATE: '/api/properties',
-    UPDATE: (id: string) => `/api/properties/${id}`,
-    DELETE: (id: string) => `/api/properties/${id}`,
+    LOGIN: '/api/smartdha/user/login',
+    LOGOUT: '/api/smartdha/user/logout',
+    REFRESH: '/api/smartdha/user/refresh', // if available
   },
   // Vehicles
   VEHICLES: {
-    LIST: '/api/vehicles',
-    CREATE: '/api/vehicles',
-    UPDATE: (id: string) => `/api/vehicles/${id}`,
-    DELETE: (id: string) => `/api/vehicles/${id}`,
+    LIST: '/api/smartdha/vehicle/get-all-vehicles',
+    CREATE: '/api/smartdha/vehicle/add-vehicle',
+    UPDATE: '/api/smartdha/vehicle/update-vehicle',
+    DELETE: '/api/smartdha/vehicle/delete',
+    GET_BY_ID: (id: string) => `/api/smartdha/vehicle/${id}`,
+  },
+  // Residents
+  RESIDENTS: {
+    LIST: '/api/smartdha/resident/get-all-residents',
+    CREATE: '/api/smartdha/resident/add-resident',
+    UPDATE: '/api/smartdha/resident/update-resident',
+    DELETE: '/api/smartdha/resident/delete',
+    GET_BY_ID: (id: string) => `/api/smartdha/resident/${id}`,
+  },
+  // Properties
+  PROPERTIES: {
+    LIST: '/api/smartdha/property/get-all-properties',
+    CREATE: '/api/smartdha/property/add-property',
+    UPDATE: '/api/smartdha/property/update-property',
+    DELETE: '/api/smartdha/property/delete',
+    GET_BY_ID: (id: string) => `/api/smartdha/property/${id}`,
   },
   // Visitors
   VISITORS: {
-    LIST: '/api/visitors',
-    CREATE: '/api/visitors',
-    QUICK_ADD: '/api/visitors/quick',
-    UPDATE: (id: string) => `/api/visitors/${id}`,
-    DELETE: (id: string) => `/api/visitors/${id}`,
+    LIST: '/api/smartdha/visitor/get-all-visitors',
+    CREATE: '/api/smartdha/visitor/add-visitor',
+    QUICK_ADD: '/api/smartdha/visitor/quick-add',
+    UPDATE: '/api/smartdha/visitor/update-visitor',
+    DELETE: '/api/smartdha/visitor/delete',
+    GET_BY_ID: (id: string) => `/api/smartdha/visitor/${id}`,
   },
   // Workers
   WORKERS: {
-    LIST: '/api/workers',
-    CREATE: '/api/workers',
-    UPDATE: (id: string) => `/api/workers/${id}`,
-    DELETE: (id: string) => `/api/workers/${id}`,
+    LIST: '/api/smartdha/worker/get-all-workers',
+    CREATE: '/api/smartdha/worker/add-worker',
+    UPDATE: '/api/smartdha/worker/update-worker',
+    DELETE: '/api/smartdha/worker/delete',
+    GET_BY_ID: (id: string) => `/api/smartdha/worker/${id}`,
   },
   // Luggage
   LUGGAGE: {
-    LIST: '/api/luggage',
-    CREATE: '/api/luggage',
-    UPDATE: (id: string) => `/api/luggage/${id}`,
-    DELETE: (id: string) => `/api/luggage/${id}`,
+    LIST: '/api/smartdha/luggage/get-all-luggage',
+    CREATE: '/api/smartdha/luggage/add-luggage',
+    UPDATE: '/api/smartdha/luggage/update-luggage',
+    DELETE: '/api/smartdha/luggage/delete',
+    GET_BY_ID: (id: string) => `/api/smartdha/luggage/${id}`,
   },
   // Notifications
   NOTIFICATIONS: {
-    LIST: '/api/notifications',
-    MARK_READ: (id: string) => `/api/notifications/${id}/read`,
-    MARK_ALL_READ: '/api/notifications/read-all',
+    LIST: '/api/smartdha/notification/get-all-notifications',
+    MARK_READ: (id: string) => `/api/smartdha/notification/${id}/read`,
+    MARK_ALL_READ: '/api/smartdha/notification/read-all',
   },
   // Dashboard
   DASHBOARD: {
-    STATS: '/api/dashboard/stats',
-    MEMBER_STATS: '/api/dashboard/member-stats',
+    STATS: '/api/smartdha/dashboard/stats',
+    MEMBER_STATS: '/api/smartdha/dashboard/member-stats',
   },
 };

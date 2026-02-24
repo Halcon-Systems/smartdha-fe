@@ -4,23 +4,17 @@ import React, { useEffect, useState } from 'react'
 import About from '../../componnets/About'
 import Loader from '../../componnets/ui/loader';
 import Dashboard from '@/app/componnets/dashboard/Dashboard';
+import { useAuth } from '@/app/hooks/useAuth';
 
 const Page = () => {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // ⏳ Simulate loading (e.g., fetching user/auth state)
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000); // 1.5 sec loader, adjust as needed
-    return () => clearTimeout(timer);
-  }, []);
+  const { isAuthenticated, loading, user } = useAuth(true);
 
   if (loading) {
-    //  Show same loader here
-    return (
-      <Loader/>
-    );
+    return <Loader />;
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login automatically
   }
 
   return <Dashboard />;

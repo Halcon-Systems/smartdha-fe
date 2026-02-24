@@ -3,12 +3,24 @@
 import LeftSidebar from "../componnets/shared/LeftSidebar";
 import Navbar from "../componnets/shared/Navbar";
 import RightSidebar from "../componnets/shared/RightSidebar";
+import { useAuth } from "@/app/hooks/useAuth";
+import Loader from "../componnets/ui/loader";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated, loading } = useAuth(true);
+
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login automatically
+  }
+
   return (
     /**
      * Root container — full viewport height, no overflow on the outer shell.
