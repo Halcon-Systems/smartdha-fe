@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import SvgIcon from "./SvgIcon";
 import Image from "next/image";
 import { BiChevronDown } from "react-icons/bi";
+import { authService } from "@/app/services/auth-service";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -141,6 +142,7 @@ function DropdownNavLink({
 export default function LeftSidebar() {
   const pathname = usePathname();
   const [membershipOpen, setMembershipOpen] = useState(true);
+  const router = useRouter();
 
   return (
     <div className="flex flex-col w-full h-full bg-white">
@@ -219,7 +221,8 @@ export default function LeftSidebar() {
             transition-all duration-150
           "
           onClick={() => {
-            /* handle logout */
+            authService.logout();
+            router.push("/login");
           }}
         >
             Logout

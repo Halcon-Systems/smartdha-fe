@@ -17,7 +17,10 @@ interface VisitorType {
   Destination: string;
   vehicleInfo: string;
 }
-
+export interface VisitorPassesResponse {
+  upcomingVisitors: VisitorType[]; 
+  previousVisitors: VisitorType[]; 
+}
 const VisitorComponent: React.FC = () => {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);

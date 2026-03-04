@@ -204,6 +204,7 @@ const AddWorkerForm: React.FC = () => {
     setSuccess(null);
 
     try {
+      debugger;
       // Create FormData for API (supports file uploads)
       const formDataToSend = new FormData();
       

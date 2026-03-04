@@ -1,11 +1,21 @@
 import { API_CONFIG, API_ENDPOINTS } from '../lib/api-config';
+import { authService } from './auth-service';
+import type { VisitorPass } from '../types/api';
 
 // API Response type matching your backend
 interface ApiResponse<T = any> {
-  succeeded: boolean;
-  message: string;
-  data: T;
-  errors: string[];
+  // backend varies between succeeded/success in this codebase,
+  // so keep this loose and normalize at call sites if needed
+  succeeded?: boolean;
+  success?: boolean;
+  message?: string;
+  data?: T;
+  errors?: string[];
+}
+
+export interface VisitorPassesResponse {
+  upcoming: VisitorPass[];
+  previous: VisitorPass[];
 }
 
 // Visitor API response with separate arrays
@@ -60,10 +70,17 @@ export class VisitorService {
       headers: {
         'Content-Type': 'application/json',
         'accept': '*/*',
-        'Authorization': `${this.getAuthToken()}`
+        'Authorization': `Bearer ${this.getAuthToken()}` 
       },
       body: JSON.stringify(data)
     });
+  
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('API Error:', response.status, error);
+      throw new Error(`API Error: ${response.status}`);
+    }
+  
     return response.json();
   }
 
@@ -104,15 +121,80 @@ export class VisitorService {
   }
 
   // Get all visitors
-  async getAllVisitors(query?: any): Promise<VisitorListResponse> {
+  // async getAllVisitorPasses(userId: string): Promise<ApiResponse<VisitorListResponse>> {
+  //   debugger;
+  //   const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VISITORS.LIST}`, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //       'Authorization': `Bearer ${this.getAuthToken()}`
+  //     },
+  //     body: JSON.stringify({ id: userId })  // ✅ Send userId as "id"
+  //   });
+  
+  //   if (!response.ok) {
+  //     throw new Error(`API Error: ${response.status}`);
+  //   }
+  
+  //   return response.json();
+  // }
+
+  // async getAllVisitorPasses(userId: string): Promise<ApiResponse<VisitorPassListResponse>> {
+  //   debugger;
+  //   const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VISITORS.LIST}`, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //       'Authorization': `Bearer ${this.getAuthToken()}`
+  //     },
+  //     body: JSON.stringify({ id: userId })  // ✅ Send userId as "id"
+  //   });
+  
+  //   if (!response.ok) {
+  //     throw new Error(`API Error: ${response.status}`);
+  //   }
+  
+  //   return response.json();
+  // }
+  
+  // OR if you want to get current user's visitor passes automatically
+  // async getAllVisitorPasses(): Promise<ApiResponse<VisitorListResponse>> {
+  //   debugger;
+  //   //const userId = authService.getCurrentUser()?.id; // Get from token or state
+    
+  //   const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VISITORS.LIST}`, {
+  //     method: 'POST',
+  //   //   headers: {
+  //   //     'Content-Type': 'application/json',
+  //   //     'Authorization': `Bearer ${this.getAuthToken()}`
+  //   //   },
+  //   //   body: JSON.stringify({ id: userId })
+  //   });
+  
+  //   if (!response.ok) {
+  //     throw new Error(`API Error: ${response.status}`);
+  //   }
+  
+  //   return response.json();
+  // }
+
+  async getAllVisitorPasses(userId?: string): Promise<ApiResponse<VisitorPassesResponse>> {
     const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VISITORS.LIST}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.getAuthToken()}`
+        'accept': '*/*',
+        'Authorization': `Bearer ${this.getAuthToken()}`,
       },
-      body: JSON.stringify(query || {})
+      body: userId ? JSON.stringify({ id: userId }) : undefined,
     });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('API Error:', response.status, error);
+      throw new Error(`API Error: ${response.status}`);
+    }
+
     return response.json();
   }
 

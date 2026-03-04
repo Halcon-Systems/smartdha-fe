@@ -250,6 +250,7 @@ export interface VisitorPass {
   name?: string;
   cnic?: string;
   vehicleLicensePlate?: string;
+  vehicleInfo? : string;
   vehicleLicenseNo?: number;
   visitorPassType: VisitorPassType;
   validFrom: string;

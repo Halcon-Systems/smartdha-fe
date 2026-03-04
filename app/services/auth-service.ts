@@ -51,28 +51,9 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
-    try {
-      // Call logout endpoint if available
-      const token = typeof window !== 'undefined' 
-        ? localStorage.getItem('accessToken') 
-        : null;
-      
-      if (token) {
-        await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.AUTH.LOGOUT}`, {
-          method: 'POST',
-          headers: {
-            'accept': '*/*',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear local storage regardless of API call success
-      this.clearAuthData();
-    }
+    // No logout API in this project currently.
+    // Client-side logout is sufficient: clear tokens + user data.
+    this.clearAuthData();
   }
 
   isAuthenticated(): boolean {

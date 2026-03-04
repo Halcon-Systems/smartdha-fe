@@ -13,54 +13,50 @@ import { useAuth } from "../../hooks/useAuth";
 
 /* ================= TYPES ================= */
 
-type VisitorType = {
-  id: string;
-  name: string;
-  cnic: string;
-  vehicleInfo?: string;
-  visitDetail?: string;
-  validity?: string;
-  isActive: boolean;
-  validFrom?: string;
-  validTo?: string;
-};
+export interface VisitorPassesResponse {
+  upcoming: VisitorPass[];
+  previous: VisitorPass[];
+}
 
 /* ================= COMPONENT ================= */
 
 const Visitor = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    "Upcoming Visitors" | "Previous Visitors"
-  >("Upcoming Visitors");
-
+  const [activeTab, setActiveTab] = useState<"Upcoming Visitors" | "Previous Visitors">("Upcoming Visitors");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [visitors, setVisitors] = useState<VisitorPass[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<VisitorPass | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [visitorData, setVisitorData] = useState<VisitorPassesResponse>({
+    upcoming: [],
+    previous: [],
+  });
 
-  // Load visitors from API
   const loadVisitors = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Get logged-in user ID from useAuth hook
-      const userId = user?.id;
-      
-      const response = await visitorService.getAllVisitors({ id: userId });
-      console.log(response);
-      if (response.success) {
-        // Combine both arrays for display
-        const allVisitors = [...(response.upcomingVisitors || []), ...(response.previousVisitors || [])];
-        setVisitors(allVisitors);
+
+      const response: any = await visitorService.getAllVisitorPasses(user?.id);
+      const succeeded = response?.succeeded ?? response?.success ?? false;
+      const payload = response?.data ?? response;
+      const upcoming =
+        payload?.upcoming ?? payload?.upcomingVisitors ?? payload?.upcomingVisitor ?? [];
+      const previous =
+        payload?.previous ?? payload?.previousVisitors ?? payload?.previousVisitor ?? [];
+
+      if (succeeded) {
+        setVisitorData({
+          upcoming,
+          previous,
+        });
       } else {
-        setError(response.message || "Failed to load visitors");
+        setError(response?.message || "Failed to load visitors");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
@@ -68,37 +64,26 @@ const Visitor = () => {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     loadVisitors();
   }, []);
 
-  // Handle tab change with API refresh
   const handleTabChange = (tab: "Upcoming Visitors" | "Previous Visitors") => {
     setActiveTab(tab);
     setCurrentPage(1);
-    // Reload visitors when switching tabs
-    loadVisitors();
   };
 
-  // Filter visitors based on active tab
-  const filteredVisitors = visitors.filter(visitor => {
-    const now = new Date();
-    const validFrom = visitor.validFrom ? new Date(visitor.validFrom) : null;
-    const validTo = visitor.validTo ? new Date(visitor.validTo) : null;
-    
-    if (activeTab === "Upcoming Visitors") {
-      return validFrom && validFrom >= now;
-    } else {
-      return validTo && validTo < now;
-    }
-  });
+  const currentVisitors =
+    activeTab === "Upcoming Visitors"
+      ? visitorData.upcoming
+      : visitorData.previous;
 
   // Pagination
-  const totalPages = Math.ceil(filteredVisitors.length / rowsPerPage);
+  const totalPages = Math.ceil(currentVisitors.length / rowsPerPage) || 1;
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedData = filteredVisitors.slice(startIndex, endIndex);
+  const paginatedData = currentVisitors.slice(startIndex, endIndex);
 
   // Handle edit
   const handleEdit = (item: VisitorPass) => {
@@ -123,7 +108,7 @@ const Visitor = () => {
         } else {
           setError("Failed to delete visitor");
         }
-      } catch (err) {
+       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to delete visitor");
       } finally {
         setShowDeleteModal(false);
@@ -200,7 +185,7 @@ const Visitor = () => {
                 : "Upcoming Visitors List"}
             </h2>
             <p className="text-xs text-gray-500">
-              {filteredVisitors.length} total records
+              {currentVisitors.length} total records
             </p>
           </div>
 
@@ -238,7 +223,26 @@ const Visitor = () => {
             </thead>
 
             <tbody>
-              {paginatedData.map((item, index) => (
+              {loading ? (
+                <tr>
+                  <td className="px-4 py-6 text-sm text-gray-500" colSpan={6}>
+                    Loading...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td className="px-4 py-6 text-sm text-red-600" colSpan={6}>
+                    {error}
+                  </td>
+                </tr>
+              ) : paginatedData.length === 0 ? (
+                <tr>
+                  <td className="px-4 py-6 text-sm text-gray-500" colSpan={6}>
+                    No visitors found.
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.map((item, index) => (
                 <tr
                   key={item.id}
                   className={`${rowStyle(index)} hover:bg-gray-50`}
@@ -247,7 +251,7 @@ const Visitor = () => {
                     {item.name}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.vehicleLicensePlate || item.vehicleLicenseNo ? `${item.vehicleLicensePlate || ''} ${item.vehicleLicenseNo || ''}` : "-"}
+                    {item.vehicleInfo}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {item.visitorPassType || "-"}
@@ -259,20 +263,27 @@ const Visitor = () => {
                     }
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {item.cnic}
+                    {item.cnic || "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
-                      <button className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
+                      >
                         <SvgIcon name="Edit-Icon" size={14} />
                       </button>
-                      <button className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200">
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
+                      >
                        <SvgIcon name="delete-icon" size={14} />
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -281,8 +292,8 @@ const Visitor = () => {
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
             Showing {startIndex + 1} to{" "}
-            {Math.min(endIndex, filteredVisitors.length)} of{" "}
-            {filteredVisitors.length}
+            {Math.min(endIndex, currentVisitors.length)} of{" "}
+            {currentVisitors.length}
           </div>
 
           <div className="flex items-center gap-2">
