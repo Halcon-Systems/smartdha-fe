@@ -1,0 +1,353 @@
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiEdit2,
+  FiTrash2,
+} from "react-icons/fi";
+import SvgIcon from "../shared/SvgIcon";
+import { visitorService } from "../../services/visitor-service";
+import type { VisitorPass } from "../../types/api";
+import { useAuth } from "../../hooks/useAuth";
+import WarningModal from "../shared/WarningModal";
+
+/* ================= TYPES ================= */
+
+export interface VisitorPassesResponse {
+  upcoming: VisitorPass[];
+  previous: VisitorPass[];
+}
+
+/* ================= COMPONENT ================= */
+
+const Visitor = () => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"Upcoming Visitors" | "Previous Visitors">("Upcoming Visitors");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<VisitorPass | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [visitorData, setVisitorData] = useState<VisitorPassesResponse>({
+    upcoming: [],
+    previous: [],
+  });
+
+  const loadVisitors = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response: any = await visitorService.getAllVisitorPasses();
+      const succeeded = response?.succeeded ?? response?.success ?? false;
+      const payload = response?.data ?? response;
+      const upcoming =
+        payload?.upcoming ?? payload?.upcomingVisitors ?? payload?.upcomingVisitor ?? [];
+      const previous =
+        payload?.previous ?? payload?.previousVisitors ?? payload?.previousVisitor ?? [];
+
+      if (succeeded) {
+        setVisitorData({
+          upcoming,
+          previous,
+        });
+      } else {
+        setError(response?.message || "Failed to load visitors");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    loadVisitors();
+  }, []);
+
+  const handleTabChange = (tab: "Upcoming Visitors" | "Previous Visitors") => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
+  const currentVisitors =
+    activeTab === "Upcoming Visitors"
+      ? visitorData.upcoming
+      : visitorData.previous;
+
+  // Pagination
+  const totalPages = Math.ceil(currentVisitors.length / rowsPerPage) || 1;
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedData = currentVisitors.slice(startIndex, endIndex);
+
+  // Handle edit
+  const handleEdit = (item: VisitorPass) => {
+    localStorage.setItem('editVisitorData', JSON.stringify({ id: item.id }));
+    router.push('/visitor/edit-visitor');
+  };
+
+  // Handle delete
+  const handleDelete = (item: VisitorPass) => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      try {
+        const response = await visitorService.deleteVisitor({ id: itemToDelete.id });
+        if (response.succeeded) {
+          setSuccessMessage("Visitor deleted successfully!");
+          setShowSuccessModal(true);
+          loadVisitors();
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+        } else {
+          setError(response?.message || JSON.stringify(response) || "Failed to delete visitor");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : JSON.stringify(err));
+      }
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+
+  /* ================= ROW COLOR ================= */
+
+  const rowStyle = (index: number) =>
+    index % 2 !== 0
+      ? "bg-[#F4FFF1]"
+      : "bg-white";
+
+  /* ================= RENDER ================= */
+
+  return (
+    <div className="w-full">
+      {/* Delete Confirmation Modal */}
+      <WarningModal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Visitor"
+        message={error ? `Error: ${error}` : `Are you sure you want to delete this visitor? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={() => {
+            localStorage.removeItem('editVisitorData');
+            router.push("/visitor/add-visitor-quick");
+          }}
+          className="bg-gradient-to-t from-[rgba(48,179,61,0.7)] to-[rgba(48,179,61,1)] 
+                     text-white text-sm font-semibold px-4 py-2 rounded-xl
+                     hover:from-[rgba(48,179,61,0.7)] hover:to-[rgba(48,179,61,1)] 
+                     transition w-[150px] h-[35px] text-center"
+        >
+          Add New
+        </button>
+      </div>
+
+      {/* ================= TABS ================= */}
+      <div className="flex w-full border-b-2 border-gray-200">
+        <button
+          onClick={() => handleTabChange("Upcoming Visitors")}
+          className={`flex-1 py-2.5 font-semibold rounded-tr-none rounded-tl-xl ${
+            activeTab === "Upcoming Visitors"
+              ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+              : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
+          }`}
+        >
+          Upcoming Visitors
+        </button>
+
+        <button
+          onClick={() => handleTabChange("Previous Visitors")}
+          className={`flex-1 py-2.5 font-semibold rounded-tr-xl rounded-tl-none ${
+            activeTab === "Previous Visitors"
+              ? "bg-white text-[#30B33D] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+              : "bg-gray-100 text-gray-500 shadow-[inset_0_4px_8px_rgba(225,227,238,0.95)] hover:text-[#30B33D]/70 hover:shadow-[inset_0_2px_4px_rgba(225,227,238,0.5)] hover:border-[#30B33D]/20"
+          }`}
+        >
+          Previous Visitors
+        </button>
+      </div>
+
+      {/* ================= TABLE ================= */}
+      <div className="bg-white border border-gray-200 rounded-bl-xl rounded-br-xl overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 flex justify-between items-center">
+          <div>
+            <h2 className="text-sm font-semibold">
+              {activeTab === "Previous Visitors"
+                ? "Previous Visitors List"
+                : "Upcoming Visitors List"}
+            </h2>
+            <p className="text-xs text-gray-500">
+              {currentVisitors.length} total records
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs">Show:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-1 text-xs"
+            >
+              {[5, 10, 20, 30].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Table Body */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50 text-xs uppercase">
+              <tr>
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Vehicle Info</th>
+                <th className="px-4 py-3 text-left">Visit Detail</th>
+                <th className="px-4 py-3 text-left">Validity</th>
+                <th className="px-4 py-3 text-left">CNIC No.</th>
+                <th className="px-4 py-3 text-center">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td className="px-4 py-6 text-sm text-gray-500" colSpan={6}>
+                    Loading...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td className="px-4 py-6 text-sm text-red-600" colSpan={6}>
+                    {error}
+                  </td>
+                </tr>
+              ) : paginatedData.length === 0 ? (
+                <tr>
+                  <td className="px-4 py-6 text-sm text-gray-500" colSpan={6}>
+                    No visitors found.
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.map((item, index) => (
+                <tr
+                  key={item.id}
+                  className={`${rowStyle(index)} hover:bg-gray-50`}
+                >
+                  <td className="px-4 py-3 text-sm">
+                    {item.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.vehicleInfo}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.visitorPassType || "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.validFrom && item.validTo 
+                      ? `${item.validFrom} to ${item.validTo}`
+                      : "-"
+                    }
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.cnic || "-"}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center gap-3">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="w-8 h-8 p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center"
+                      >
+                        <SvgIcon name="Edit-Icon" size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="w-8 h-8 p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center"
+                      >
+                       <SvgIcon name="delete-icon" size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ================= GREEN PAGINATION ================= */}
+        <div className="px-4 py-3 border-t flex justify-between items-center">
+          <div className="text-xs text-gray-600">
+            Showing {startIndex + 1} to{" "}
+            {Math.min(endIndex, currentVisitors.length)} of{" "}
+            {currentVisitors.length}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() =>
+                setCurrentPage((p) => Math.max(1, p - 1))
+              }
+              disabled={currentPage === 1}
+              className={`p-2 rounded border transition ${
+                currentPage === 1
+                  ? "border-gray-300 text-gray-300 cursor-not-allowed"
+                  : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
+              }`}
+            >
+              <FiChevronLeft />
+            </button>
+
+            <span className="px-4 py-1.5 rounded bg-[#30B33D] text-white text-sm font-semibold">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() =>
+                setCurrentPage((p) =>
+                  Math.min(totalPages, p + 1)
+                )
+              }
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded border transition ${
+                currentPage === totalPages
+                  ? "border-gray-300 text-gray-300 cursor-not-allowed"
+                  : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
+              }`}
+            >
+              <FiChevronRight />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Visitor;

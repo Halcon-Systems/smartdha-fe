@@ -1,0 +1,84 @@
+
+import { API_CONFIG, API_ENDPOINTS } from '../lib/api-config';
+import type { ApiResponse, Vehicle, VehicleListApiData } from '../types/api';
+
+// Create response type for vehicle creation
+interface CreateVehicleResponse {
+  succeeded: boolean;
+  data?: any;
+  errors?: any;
+}
+
+// Vehicle API Service
+export class VehicleService {
+  // Create new vehicle (with FormData for file upload and query params)
+  async createVehicle(formData: FormData, queryParams: string): Promise<CreateVehicleResponse> {
+    const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VEHICLES.CREATE}?${queryParams}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getAuthToken()}`
+      },
+      body: formData
+    });
+    return response.json();
+  }
+
+  // Update existing vehicle (with FormData for file upload)
+  async updateVehicle(formData: FormData): Promise<ApiResponse<Vehicle>> {
+    const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VEHICLES.UPDATE}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getAuthToken()}`
+      },
+      body: formData
+    });
+    return response.json();
+  }
+
+  // Delete vehicle
+  async deleteVehicle(data: { id: string | null }): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VEHICLES.DELETE}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.getAuthToken()}`
+      },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+
+  // Get vehicle by ID
+  async getVehicleById(id: string): Promise<ApiResponse<Vehicle>> {
+    const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VEHICLES.GET_BY_ID(id)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.getAuthToken()}`
+      }
+    });
+    return response.json();
+  }
+
+  // Get all vehicles (paginated response)
+  async getAllVehicles(query?: any): Promise<ApiResponse<VehicleListApiData>> {
+    const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.VEHICLES.LIST}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.getAuthToken()}`
+      },
+      body: JSON.stringify(query || {})
+    });
+    return response.json();
+  }
+
+  private getAuthToken(): string | null {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('accessToken');
+    }
+    return null;
+  }
+}
+
+// Export singleton instance
+export const vehicleService = new VehicleService();
