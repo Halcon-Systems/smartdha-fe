@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { registerNonMember } from "@/app/lib/api-client";
 
 type FormData = {
   fullName: string;
@@ -13,6 +14,13 @@ type FormData = {
   vehicleNoAlphabetic: string;
   vehicleNoNumeric: string;
   licensePlate: string;
+  cnic: string;
+  cnicFrontImage: File | null;
+  cnicBackImage: File | null;
+  profilePicture: File | null;
+  proofOfPossession: File | null;
+  serviceCardNumber: File | null;
+  utilityBill: File | null;
 };
 
 const AddOthersForm: React.FC = () => {
@@ -31,7 +39,17 @@ const AddOthersForm: React.FC = () => {
     vehicleNoAlphabetic: "",
     vehicleNoNumeric: "",
     licensePlate: "",
+    cnic: "",
+    cnicFrontImage: null,
+    cnicBackImage: null,
+    profilePicture: null,
+    proofOfPossession: null,
+    serviceCardNumber: null,
+    utilityBill: null,
   });
+
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [apiResponse, setApiResponse] = useState<any>(null);
 
   useEffect(() => {
     const editData = localStorage.getItem("editOthersData");
@@ -72,10 +90,12 @@ const AddOthersForm: React.FC = () => {
   const handleInputChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ): void => {
-    const { name, value } = e.target;
+    const { name, value, type, files } = e.target as HTMLInputElement;
     setFormData((prev) => {
+      if (type === "file") {
+        return { ...prev, [name]: files && files.length > 0 ? files[0] : null };
+      }
       const updated = { ...prev, [name]: value };
-
       if (name === "vehicleNoAlphabetic" || name === "vehicleNoNumeric") {
         const alpha = updated.vehicleNoAlphabetic.trim();
         const numeric = updated.vehicleNoNumeric.trim();
@@ -83,16 +103,42 @@ const AddOthersForm: React.FC = () => {
           ? `${alpha}${alpha && numeric ? "-" : ""}${numeric}`
           : "";
       }
-
       return updated;
     });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Others Form Data:", formData);
-    localStorage.removeItem("editOthersData");
-    // Handle form submission here
+    setSubmitStatus(null);
+    setApiResponse(null);
+    try {
+      const fd = new window.FormData();
+      // Map fields to API keys
+      fd.append("Name", formData.fullName);
+      fd.append("Password", formData.password);
+      fd.append("Email", formData.emailAddress);
+      fd.append("MobileNo", formData.cellNumber);
+      fd.append("CategoryId", formData.category);
+      fd.append("SubCategoryId", formData.subCategory);
+      fd.append("PurposeVisit", formData.purposeOfVisit);
+      fd.append("VehicleNumber", formData.licensePlate);
+      fd.append("CNIC", formData.cnic);
+      // File fields
+      if (formData.cnicFrontImage) fd.append("CNICFrontImage", formData.cnicFrontImage);
+      if (formData.cnicBackImage) fd.append("CNICBackImage", formData.cnicBackImage);
+      if (formData.profilePicture) fd.append("ProfilePicture", formData.profilePicture);
+      if (formData.proofOfPossession) fd.append("ProofOfPossession", formData.proofOfPossession);
+      if (formData.serviceCardNumber) fd.append("ServiceCardNumber", formData.serviceCardNumber);
+      if (formData.utilityBill) fd.append("UtilityBill", formData.utilityBill);
+      // Add other fields as needed (ZoneId, PlotNo, etc.)
+      const response = await registerNonMember(fd);
+      setApiResponse(response);
+      setSubmitStatus("success");
+      localStorage.removeItem("editOthersData");
+    } catch (err: any) {
+      setSubmitStatus("error: " + (err.message || "Unknown error"));
+      setApiResponse(null);
+    }
   };
 
   const handleCancel = () => {
@@ -313,6 +359,38 @@ const AddOthersForm: React.FC = () => {
           </div>
           </div>
 
+          {/* File Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="CNIC" required />
+              <TextInput name="cnic" value={formData.cnic} placeholder="CNIC Number" required />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="CNIC Front Image" />
+              <input type="file" name="cnicFrontImage" accept="image/*" onChange={handleInputChange} />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="CNIC Back Image" />
+              <input type="file" name="cnicBackImage" accept="image/*" onChange={handleInputChange} />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="Profile Picture" />
+              <input type="file" name="profilePicture" accept="image/*" onChange={handleInputChange} />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="Proof Of Possession" />
+              <input type="file" name="proofOfPossession" accept="image/*,application/pdf" onChange={handleInputChange} />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="Service Card Number (File)" />
+              <input type="file" name="serviceCardNumber" accept="image/*,application/pdf" onChange={handleInputChange} />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="Utility Bill" />
+              <input type="file" name="utilityBill" accept="image/*,application/pdf" onChange={handleInputChange} />
+            </FieldBox>
+          </div>
+
           {/* Submit Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
@@ -329,6 +407,20 @@ const AddOthersForm: React.FC = () => {
               {isEditing ? "Update" : "Add"}
             </button>
           </div>
+
+          {/* Submission Status */}
+          {submitStatus === "success" && (
+            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
+          )}
+          {submitStatus && submitStatus.startsWith("error") && (
+            <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
+          )}
+          {apiResponse && (
+            <div className="mt-4">
+              <div className="font-semibold mb-1">API Response:</div>
+              <pre className="bg-gray-100 rounded p-2 text-xs overflow-x-auto max-h-64">{JSON.stringify(apiResponse, null, 2)}</pre>
+            </div>
+          )}
         </form>
       </div>
     </div>

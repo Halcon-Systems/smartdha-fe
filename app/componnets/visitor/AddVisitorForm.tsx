@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { registerNonMember } from "@/app/lib/api-client";
 
 type FormData = {
   fullName: string;
@@ -93,11 +94,26 @@ const AddVisitorForm: React.FC<AddVisitorFormProps> = ({ mode, visitorId }) => {
     });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Visitor Form Data:", formData);
-    localStorage.removeItem("editResidentVisitorData");
-    // Handle form submission here
+    setSubmitStatus(null);
+    try {
+      const fd = new window.FormData();
+      fd.append("Name", formData.fullName);
+      fd.append("Password", formData.password);
+      fd.append("Email", formData.emailAddress);
+      fd.append("MobileNo", formData.cellNumber);
+      fd.append("CategoryId", formData.category);
+      fd.append("SubCategoryId", formData.subCategory);
+      fd.append("Destination", formData.destination);
+      fd.append("VehicleNumber", formData.licensePlate);
+      await registerNonMember(fd);
+      setSubmitStatus("success");
+      localStorage.removeItem("editResidentVisitorData");
+    } catch (err: any) {
+      setSubmitStatus("error: " + (err.message || "Unknown error"));
+    }
   };
 
   const handleCancel = () => {
@@ -336,6 +352,14 @@ const AddVisitorForm: React.FC<AddVisitorFormProps> = ({ mode, visitorId }) => {
               {isEditing ? "Update" : "Add"}
             </button>
           </div>
+
+          {/* Submission Status */}
+          {submitStatus === "success" && (
+            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
+          )}
+          {submitStatus && submitStatus.startsWith("error") && (
+            <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
+          )}
         </form>
       </div>
     </div>
