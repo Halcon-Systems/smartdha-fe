@@ -1,73 +1,72 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiChevronLeft,
   FiChevronRight,
 } from "react-icons/fi";
 import SvgIcon from "../shared/SvgIcon";
+import { fetchNonMemberVerificationList } from "../../lib/api-client";
 import { useRouter } from "next/navigation";
 
 interface HouseHelpWorkerType {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
-  subCategory: string;
+  subcategory: string;
 }
 
 const HouseHelpWorker: React.FC = () => {
   const router = useRouter();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [workers, setWorkers] = useState<HouseHelpWorkerType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   const handleEdit = (worker: HouseHelpWorkerType) => {
     localStorage.setItem("editHouseHelpWorkerData", JSON.stringify(worker));
     router.push("/residents/add-house-help-worker");
   };
 
-  // Mock data
-  const workers: HouseHelpWorkerType[] = [
-    {
-    id: 1,
-    name: "Ahmed Hassan",
-    email: "ahmed.hassan@example.com",
-    phone: "0300-1234567",
-    subCategory: "Vendor",
-  },
-  {
-    id: 2,
-    name: "Mariam Yousuf",
-    email: "mariam.yousuf@example.com",
-    phone: "0301-2345678",
-    subCategory: "Service Provider",
-  },
-  {
-    id: 3,
-    name: "Zain Abbas",
-    email: "zain.abbas@example.com",
-    phone: "0302-3456789",
-    subCategory: "Contractor",
-  },
-  {
-    id: 4,
-    name: "Sana Khan",
-    email: "sana.khan@example.com",
-    phone: "0303-4567890",
-    subCategory: "Consultant",
-  },
-  {
-    id: 5,
-    name: "Bilal Raza",
-    email: "bilal.raza@example.com",
-    phone: "0304-5678901",
-    subCategory: "Maintenance",
-  },];
 
-  const totalPages = Math.ceil(workers.length / rowsPerPage);
+  // Fetch house-help workers from API
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+    fetchNonMemberVerificationList({
+      memberType: "Houes-Help Worker",
+      pageNumber: currentPage,
+      pageSize: rowsPerPage,
+    })
+      .then((data) => {
+        if (!isMounted) return;
+        setWorkers(data || []);
+        setHasNextPage(Array.isArray(data) && data.length === rowsPerPage);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.message || "Failed to fetch house-help workers");
+        setWorkers([]);
+        setHasNextPage(false);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, rowsPerPage]);
+
+
+  // Since backend doesn't return total, we only know if there's a next page if we get a full page of results
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const paginatedData = workers.slice(startIndex, endIndex);
+  const endIndex = startIndex + workers.length;
+  const paginatedData = workers;
 
   const rowStyle = (index: number) =>
     index % 2 !== 0 ? "bg-[#F4FFF1]" : "bg-white";
@@ -122,7 +121,7 @@ const HouseHelpWorker: React.FC = () => {
           <table className="min-w-full">
             <thead className="bg-gray-50 text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">ID</th>
+                <th className="px-4 py-3 text-left">#</th>
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Email</th>
                 <th className="px-4 py-3 text-left">Phone</th>
@@ -132,16 +131,28 @@ const HouseHelpWorker: React.FC = () => {
             </thead>
 
             <tbody>
-              {paginatedData.map((worker, index) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-6 text-gray-500">Loading...</td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-6 text-red-500">{error}</td>
+                </tr>
+              ) : paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-6 text-gray-400">No records found.</td>
+                </tr>
+              ) : paginatedData.map((worker, index) => (
                 <tr
                   key={worker.id}
                   className={`${rowStyle(index)} hover:bg-gray-50`}
                 >
-                  <td className="px-4 py-3 text-sm">{worker.id}</td>
+                  <td className="px-4 py-3 text-sm">{startIndex + index + 1}</td>
                   <td className="px-4 py-3 text-sm">{worker.name}</td>
                   <td className="px-4 py-3 text-sm">{worker.email}</td>
                   <td className="px-4 py-3 text-sm">{worker.phone}</td>
-                  <td className="px-4 py-3 text-sm">{worker.subCategory}</td>
+                  <td className="px-4 py-3 text-sm">{worker.subcategory}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">
                       <button
@@ -161,15 +172,15 @@ const HouseHelpWorker: React.FC = () => {
         {/* Pagination */}
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
-            Showing {startIndex + 1} to {Math.min(endIndex, workers.length)} of {workers.length}
+            Showing {startIndex + 1} to {endIndex} (page {currentPage})
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
               className={`p-2 rounded border transition ${
-                currentPage === 1
+                currentPage === 1 || loading
                   ? "border-gray-300 text-gray-300 cursor-not-allowed"
                   : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
               }`}
@@ -178,14 +189,14 @@ const HouseHelpWorker: React.FC = () => {
             </button>
 
             <span className="px-4 py-1.5 rounded bg-[#30B33D] text-white text-sm font-semibold">
-              {currentPage} / {totalPages}
+              Page {currentPage}
             </span>
 
             <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={!hasNextPage || loading}
               className={`p-2 rounded border transition ${
-                currentPage === totalPages
+                !hasNextPage || loading
                   ? "border-gray-300 text-gray-300 cursor-not-allowed"
                   : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
               }`}

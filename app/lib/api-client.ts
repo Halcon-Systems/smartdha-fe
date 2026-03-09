@@ -1,3 +1,35 @@
+// Fetch non-member verification list for Visitor tab with pagination (no total count from backend)
+export async function fetchNonMemberVerificationList({
+  memberType = "Visitor",
+  pageNumber = 1,
+  pageSize = 10,
+}: {
+  memberType?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}) {
+  let headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("authToken") || localStorage.getItem("accessToken") || "";
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  const response = await fetch(
+    "https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/get-nonmember-verification-list",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ memberType, pageNumber, pageSize }),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch non-member verification list");
+  }
+  const data = await response.json();
+  // Always return the .data array from the API response
+  return Array.isArray(data?.data) ? data.data : [];
+}
 // Utility to POST form-data (with files) to register-nonmember API (external endpoint)
 export async function registerNonMember(formData: FormData) {
   const response = await fetch("https://dfpwebp.dhakarachi.org/api/nonmember/register-nonmember", {
