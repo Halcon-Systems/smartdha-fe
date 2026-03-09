@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiBook,
   FiChevronLeft,
@@ -6,7 +6,8 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
-import AddResidentForm from "./AddResidentForm";
+import AddResidentForm from "./AddResidentPageForm";
+import { fetchNonMemberVerificationList } from "../../lib/api-client";
 import SvgIcon from "../shared/SvgIcon";
 import { useRouter } from "next/navigation";
 import EducationalVisitor from "../educational-visitor/EducationalVisitor";
@@ -90,80 +91,71 @@ const Resident = () => {
     router.push("/residents/add-residents");
   };
 
-  /* ================= LARGE DUMMY DATA ================= */
 
-  const dummyResidents: ResidentType[] = Array.from(
-    { length: 45 },
-    (_, i) => ({
-      id: i + 1,
-      fullName: `Resident ${i + 1}`,
-      emailAddress: `resident${i + 1}@example.com`,
-      password: "password123",
-      cellNumber: `0301-2346${(10 + i)
-        .toString()
-        .padStart(2, "0")}`,
-      category: i % 2 === 0 ? "Resident" : "Commercial",
-      subCategory: i % 3 === 0 ? "Owner" : i % 3 === 1 ? "Tenant" : "Family Member",
-      phase: `Phase ${((i % 8) + 1)}`,
-      zone: `Zone ${((i % 4) + 1)}`,
-      khayaban: `Khayaban ${String.fromCharCode(65 + (i % 26))}`,
-      floor: i % 10 === 0 ? undefined : `${(i % 10) + 1}`,
-      laneStreetNo: `Lane ${(i % 20) + 1}`,
-      plotNoNumeric: `${((i % 100) + 1)}`,
-      plotNoAlphabetic: String.fromCharCode(65 + (i % 26)),
-      plotNoAlphaNumeric: i % 3 === 0 ? undefined : `${(i % 10)}-${String.fromCharCode(65 + (i % 26))}`,
-      profilePicture: null,
-      proofOfPossession: null,
-      utilityBill: null,
+  // ================= API DATA & PAGINATION =================
+  const [residentData, setResidentData] = useState<ResidentType[]>([]);
+  const [commercialData, setCommercialData] = useState<CommercialType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasNextPage, setHasNextPage] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+    const memberType = activeTab === "resident" ? "Residential" : "Commercial";
+    fetchNonMemberVerificationList({
+      memberType,
+      pageNumber: currentPage,
+      pageSize: rowsPerPage,
     })
-  );
+      .then((data) => {
+        if (!isMounted) return;
+        // Map API fields to UI fields
+        const mapped = (data || []).map((item: any) => ({
+          id: item.id,
+          fullName: item.name || item.fullName || "",
+          emailAddress: item.email || item.emailAddress || "",
+          cellNumber: item.phone || item.cellNumber || "",
+          category: item.category || "",
+          subCategory: item.subcategory || item.subCategory || "",
+          phase: item.phase || "",
+          zone: item.zone || "",
+          khayaban: item.khayaban || "",
+          floor: item.floor || "",
+          laneStreetNo: item.laneStreetNo || "",
+          plotNoNumeric: item.plotNoNumeric || "",
+          plotNoAlphabetic: item.plotNoAlphabetic || "",
+          plotNoAlphaNumeric: item.plotNoAlphaNumeric || "",
+          profilePicture: item.profilePicture || null,
+          proofOfPossession: item.proofOfPossession || null,
+          utilityBill: item.utilityBill || null,
+        }));
+        if (activeTab === "resident") {
+          setResidentData(mapped);
+        } else {
+          setCommercialData(mapped);
+        }
+        setHasNextPage(Array.isArray(data) && data.length === rowsPerPage);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.message || "Failed to fetch data");
+        setResidentData([]);
+        setCommercialData([]);
+        setHasNextPage(false);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab, currentPage, rowsPerPage]);
 
-  const dummyCommercial: CommercialType[] = Array.from(
-    { length: 32 },
-    (_, i) => ({
-      id: i + 1,
-      fullName: `Com-User ${i + 1}`,
-      emailAddress: `commercial${i + 1}@example.com`,
-      password: "password123",
-      cellNumber: `0300-5678${(10 + i)
-        .toString()
-        .padStart(2, "0")}`,
-      category: "Commercial",
-      subCategory: i % 3 === 0 ? "Retail" : i % 3 === 1 ? "Office" : "Service",
-      phase: `Phase ${((i % 8) + 1)}`,
-      zone: `Zone ${((i % 4) + 1)}`,
-      khayaban: `Commercial ${String.fromCharCode(65 + (i % 26))}`,
-      floor: i % 10 === 0 ? undefined : `${(i % 10) + 1}`,
-      laneStreetNo: `Street ${(i % 20) + 1}`,
-      plotNoNumeric: `${((i % 100) + 1)}`,
-      plotNoAlphabetic: String.fromCharCode(65 + (i % 26)),
-      plotNoAlphaNumeric: i % 3 === 0 ? undefined : `${(i % 10)}-${String.fromCharCode(65 + (i % 26))}`,
-      profilePicture: null,
-      proofOfPossession: null,
-      utilityBill: null,
-    })
-  );
-
-  /* ================= PAGINATION ================= */
-
-  const activeData =
-    activeTab === "resident"
-      ? dummyResidents
-      : dummyCommercial;
-
-  const totalPages = Math.ceil(
-    activeData.length / rowsPerPage
-  );
-
-  const startIndex =
-    (currentPage - 1) * rowsPerPage;
-
-  const endIndex = startIndex + rowsPerPage;
-
-  const paginatedData = activeData.slice(
-    startIndex,
-    endIndex
-  );
+  const paginatedData = activeTab === "resident" ? residentData : commercialData;
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + paginatedData.length;
 
   /* ================= ROW COLOR ================= */
 
@@ -307,7 +299,7 @@ const Resident = () => {
                     : "Commercial List"}
                 </h2>
                 <p className="text-xs text-gray-500">
-                  {activeData.length} total records
+                  {paginatedData.length} records on this page
                 </p>
               </div>
 
@@ -362,7 +354,19 @@ const Resident = () => {
                 </thead>
 
                 <tbody>
-                  {paginatedData.map((item, index) => (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-6 text-gray-500">Loading...</td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-6 text-red-500">{error}</td>
+                    </tr>
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-6 text-gray-400">No records found.</td>
+                    </tr>
+                  ) : paginatedData.map((item, index) => (
                     <tr
                       key={item.id}
                       className={`${rowStyle(index)} hover:bg-gray-50`}
@@ -443,19 +447,15 @@ const Resident = () => {
 
             <div className="px-4 py-3 border-t flex justify-between items-center">
               <div className="text-xs text-gray-600">
-                Showing {startIndex + 1} to{" "}
-                {Math.min(endIndex, activeData.length)} of{" "}
-                {activeData.length}
+                Showing {startIndex + 1} to {endIndex} (page {currentPage})
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.max(1, p - 1))
-                  }
-                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || loading}
                   className={`p-2 rounded border transition ${
-                    currentPage === 1
+                    currentPage === 1 || loading
                       ? "border-gray-300 text-gray-300 cursor-not-allowed"
                       : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
                   }`}
@@ -464,18 +464,14 @@ const Resident = () => {
                 </button>
 
                 <span className="px-4 py-1.5 rounded bg-[#30B33D] text-white text-sm font-semibold">
-                  {currentPage} / {totalPages}
+                  Page {currentPage}
                 </span>
 
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) =>
-                      Math.min(totalPages, p + 1)
-                    )
-                  }
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  disabled={!hasNextPage || loading}
                   className={`p-2 rounded border transition ${
-                    currentPage === totalPages
+                    !hasNextPage || loading
                       ? "border-gray-300 text-gray-300 cursor-not-allowed"
                       : "border-[#30B33D] text-[#30B33D] hover:bg-[#30B33D] hover:text-white"
                   }`}

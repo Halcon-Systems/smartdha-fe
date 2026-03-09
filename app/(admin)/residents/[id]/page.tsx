@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react'
 import Loader from '@/app/componnets/ui/loader';
 import ResidentDetails from '@/app/componnets/resident/ResidentDetails';
 
-const Page = ({ params }: { params: { id: string } }) => {
+
+const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const [loading, setLoading] = useState(true);
+  const { id } = React.use(params);
 
   useEffect(() => {
     // ⏳ Simulate loading (e.g., fetching user/auth state)
@@ -22,7 +24,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     );
   }
 
-  return <ResidentDetails residentId={params.id} />;
+  return <ResidentDetails residentId={id} />;
 }
 
 export default Page

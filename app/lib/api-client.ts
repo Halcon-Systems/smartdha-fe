@@ -1,3 +1,83 @@
+// Fetch non-member verification list for Visitor tab with pagination (no total count from backend)
+export async function fetchNonMemberVerificationList({
+  memberType = "Visitor",
+  pageNumber = 1,
+  pageSize = 10,
+}: {
+  memberType?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}) {
+  let headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("authToken") || localStorage.getItem("accessToken") || "";
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  const response = await fetch(
+    "https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/get-nonmember-verification-list",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ memberType, pageNumber, pageSize }),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch non-member verification list");
+  }
+  const data = await response.json();
+  // Always return the .data array from the API response
+  return Array.isArray(data?.data) ? data.data : [];
+}
+// Utility to POST form-data (with files) to register-nonmember API (external endpoint)
+export async function registerNonMember(formData: FormData) {
+  const response = await fetch("https://dfpwebp.dhakarachi.org/api/nonmember/register-nonmember", {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || "Failed to register non-member");
+  }
+  return response.json();
+}
+// Fetch dashboard counts from external API
+// Fetch property list from external API
+export async function fetchPropertyList({ isActive, pageNumber, pageSize }: { isActive: boolean; pageNumber: number; pageSize: number }) {
+  // Default pageSize to 10 if not provided or zero
+  const effectivePageSize = pageSize && pageSize > 0 ? pageSize : 10;
+  // Add token if available
+  let headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("authToken") || localStorage.getItem("accessToken") || "";
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  const response = await fetch("https://dfpwebp.dhakarachi.org/api/smartdha/residenceproperty/get-all-properties", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ isActive, pageNumber, pageSize: effectivePageSize }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch property list");
+  }
+  return response.json();
+}
+export async function fetchDashboardCount() {
+  const response = await fetch("https://dfpwebp.dhakarachi.org/api/smartdha/dashboard/dashboard-count", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch dashboard count");
+  }
+  return response.json();
+}
 import { API_CONFIG } from './api-config';
 
 // Generic API Client for Backend
