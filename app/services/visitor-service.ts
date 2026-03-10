@@ -34,6 +34,10 @@ interface VisitorData {
   purpose: string;
   vehicleInfo?: string;
   visitDate?: string;
+  // Fields used by quick add/edit form
+  vehicleLicensePlate?: string;
+  vehicleLicenseNo?: number | string;
+  visitorPassType?: number;
   validFrom?: string;
   validTo?: string;
   isActive: boolean;

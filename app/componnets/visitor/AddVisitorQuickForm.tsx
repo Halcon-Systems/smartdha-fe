@@ -120,10 +120,7 @@ const AddVisitorQuickForm: React.FC<AddVisitorQuickFormProps> = ({ mode = "add" 
         setEditingId(parsed.id);
         const response = await visitorService.getVisitorById(parsed.id);
         // Support both wrapped and direct visitor object
-        let visitor = response?.data;
-        if (!visitor && response && typeof response === 'object' && response.id && response.name) {
-          visitor = response;
-        }
+        const visitor = response?.data;
 
         if (!visitor) {
           setError(
