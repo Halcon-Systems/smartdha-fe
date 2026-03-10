@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { registerNonMember } from "@/app/lib/api-client";
+import SuccessModal from "../shared/SuccessModal";
+import { useRouter } from "next/navigation";
 
 type FormData = {
   fullName: string;
@@ -13,6 +15,7 @@ type FormData = {
   profilePicture: File | null;
   cnicFront: File | null;
   cnicBack: File | null;
+  cnic: string;
 };
 
 const AddHouseHelpWorkerForm: React.FC = () => {
@@ -34,6 +37,7 @@ const AddHouseHelpWorkerForm: React.FC = () => {
     profilePicture: null,
     cnicFront: null,
     cnicBack: null,
+    cnic: "",
   });
 
   useEffect(() => {
@@ -48,6 +52,7 @@ const AddHouseHelpWorkerForm: React.FC = () => {
         email?: string;
         phone?: string;
         subCategory?: string;
+        cnic?: string;
       };
 
       setIsEditing(true);
@@ -57,6 +62,7 @@ const AddHouseHelpWorkerForm: React.FC = () => {
         emailAddress: parsed.email ?? prev.emailAddress,
         cellNumber: parsed.phone ?? prev.cellNumber,
         subCategory: parsed.subCategory ?? prev.subCategory,
+        cnic: parsed.cnic ?? prev.cnic,
       }));
     } catch (error) {
       console.error("Error parsing house help worker edit data:", error);
@@ -91,6 +97,8 @@ const AddHouseHelpWorkerForm: React.FC = () => {
   };
 
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const router = useRouter();
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitStatus(null);
@@ -105,8 +113,10 @@ const AddHouseHelpWorkerForm: React.FC = () => {
       if (formData.profilePicture) fd.append("ProfilePicture", formData.profilePicture);
       if (formData.cnicFront) fd.append("CNICFrontImage", formData.cnicFront);
       if (formData.cnicBack) fd.append("CNICBackImage", formData.cnicBack);
+      fd.append("CNIC", formData.cnic);
       await registerNonMember(fd);
       setSubmitStatus("success");
+      setShowSuccessModal(true);
       localStorage.removeItem("editHouseHelpWorkerData");
     } catch (err: any) {
       setSubmitStatus("error: " + (err.message || "Unknown error"));
@@ -118,15 +128,60 @@ const AddHouseHelpWorkerForm: React.FC = () => {
     window.history.back();
   };
 
-  const categories: string[] = ["Resident", "Commercial", "House-help Worker", "Education", "Visitor", "Others"];
-  const subCategories: { [key: string]: string[] } = {
-    "House-help Worker": ["Staff", "Maid", "Driver", "Gardner", "Cook", "Guard"],
-    Resident: ["Owner", "Tenant"],
-    Commercial: ["Retail", "Office", "Restaurant", "Service"],
-    Education: ["Student", "Parent", "Faculty"],
-    Visitor: ["Temporary Visitor"],
-    Others: ["Please Specify"]
-  };
+  // Dynamic categories and subcategories logic
+  type Category = { label: string; uuid: string; raw?: any };
+  type SubCategory = { label: string; uuid: string };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    import("@/app/lib/api-client").then(({ apiClient }) => {
+      apiClient
+        .get("/api/nonmember/get-nonmember-category")
+        .then((res) => {
+          const arr = Array.isArray(res) ? res : (res as any[]);
+          if (Array.isArray(arr)) {
+            setCategories(
+              arr.map((item: any) => ({
+                label: item.displayName || item.name,
+                uuid: item.id,
+                raw: item,
+              }))
+            );
+          } else {
+            setCategories([]);
+          }
+        })
+        .catch(() => setCategories([]));
+    });
+  }, []);
+
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (formData.category) {
+      import("@/app/lib/api-client").then(({ apiClient }) => {
+        apiClient
+          .get(`/api/nonmember/get-nonmember-subcategory-bycategoryid?Id=${formData.category}`)
+          .then((res) => {
+            const arr = Array.isArray(res) ? res : (res as any[]);
+            if (Array.isArray(arr)) {
+              setSubCategories(
+                arr.map((item: any) => ({
+                  label: item.displayName || item.name,
+                  uuid: item.id,
+                }))
+              );
+            } else {
+              setSubCategories([]);
+            }
+          })
+          .catch(() => setSubCategories([]));
+      });
+    } else {
+      setSubCategories([]);
+    }
+  }, [formData.category]);
 
   // Reusable field box
   const FieldBox = useCallback(({ children }: { children: React.ReactNode }) => (
@@ -236,6 +291,19 @@ const AddHouseHelpWorkerForm: React.FC = () => {
             </FieldBox>
           </div>
 
+          {/* Row 2.5: CNIC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="CNIC" required />
+              <TextInput
+                name="cnic"
+                value={formData.cnic}
+                placeholder="Enter CNIC"
+                required
+              />
+            </FieldBox>
+          </div>
+
           {/* Row 3: Category + Sub-Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FieldBox>
@@ -247,7 +315,9 @@ const AddHouseHelpWorkerForm: React.FC = () => {
                 <span
                   className={`text-sm ${formData.category ? "text-gray-700" : "text-gray-400"}`}
                 >
-                  {formData.category || "Select Category"}
+                  {categories.length === 0
+                    ? "Loading..."
+                    : categories.find((cat) => cat.uuid === formData.category)?.label || "Select Category"}
                 </span>
                 <svg
                   width="16"
@@ -261,23 +331,23 @@ const AddHouseHelpWorkerForm: React.FC = () => {
                 </svg>
               </div>
               {categoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({
-                          ...p,
-                          category: cat,
-                          subCategory: "",
-                        }));
-                        setCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {cat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {categories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No categories found</div>
+                  ) : (
+                    categories.map((cat) => (
+                      <div
+                        key={cat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, category: cat.uuid, subCategory: "" }));
+                          setCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {cat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -293,7 +363,7 @@ const AddHouseHelpWorkerForm: React.FC = () => {
                 <span
                   className={`text-sm ${formData.subCategory ? "text-gray-700" : "text-gray-400"}`}
                 >
-                  {formData.subCategory || "Select Type"}
+                  {subCategories.find((sub) => sub.uuid === formData.subCategory)?.label || "Select Type"}
                 </span>
                 <svg
                   width="16"
@@ -307,19 +377,23 @@ const AddHouseHelpWorkerForm: React.FC = () => {
                 </svg>
               </div>
               {subCategoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {(subCategories[formData.category] || []).map((subCat) => (
-                    <div
-                      key={subCat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, subCategory: subCat }));
-                        setSubCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {subCat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {subCategories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No subcategories found</div>
+                  ) : (
+                    subCategories.map((subCat) => (
+                      <div
+                        key={subCat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, subCategory: subCat.uuid }));
+                          setSubCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {subCat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -579,9 +653,15 @@ const AddHouseHelpWorkerForm: React.FC = () => {
           </div>
 
           {/* Submission Status */}
-          {submitStatus === "success" && (
-            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
-          )}
+          <SuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => {
+              setShowSuccessModal(false);
+              router.push("/residents");
+            }}
+            title="Registration Successful"
+            message="House help worker registered successfully."
+          />
           {submitStatus && submitStatus.startsWith("error") && (
             <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
           )}

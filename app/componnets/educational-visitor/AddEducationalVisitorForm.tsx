@@ -2,6 +2,9 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { registerNonMember } from "@/app/lib/api-client";
+import SuccessModal from "../shared/SuccessModal";
+import Snackbar from "../shared/Snackbar";
+import { useRouter } from "next/navigation";
 
 type FormData = {
   fullName: string;
@@ -15,6 +18,7 @@ type FormData = {
   vehicleNoNumeric: string;
   licensePlate: string;
   profilePicture: File | null;
+  cnic: string;
 };
 
 const AddEducationalVisitorForm: React.FC = () => {
@@ -37,6 +41,7 @@ const AddEducationalVisitorForm: React.FC = () => {
     vehicleNoNumeric: "",
     licensePlate: "",
     profilePicture: null,
+    cnic: "",
   });
 
   useEffect(() => {
@@ -69,6 +74,7 @@ const AddEducationalVisitorForm: React.FC = () => {
         vehicleNoAlphabetic: vehicleNoAlphabetic || prev.vehicleNoAlphabetic,
         vehicleNoNumeric: numberPart || prev.vehicleNoNumeric,
         licensePlate: parsed.vehicleInfo ?? prev.licensePlate,
+        cnic: prev.cnic,
       }));
     } catch (error) {
       console.error("Error parsing educational visitor edit data:", error);
@@ -111,6 +117,8 @@ const AddEducationalVisitorForm: React.FC = () => {
   };
 
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [curlCommand, setCurlCommand] = useState<string>("");
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; type?: "success" | "error" | "info" }>({ open: false, message: "", type: "info" });
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitStatus(null);
@@ -124,12 +132,49 @@ const AddEducationalVisitorForm: React.FC = () => {
       fd.append("SubCategoryId", formData.subCategory);
       fd.append("InstituteName", formData.selectInstitute);
       fd.append("VehicleNumber", formData.licensePlate);
+      fd.append("CNIC", formData.cnic); // Use user input
       if (formData.profilePicture) fd.append("ProfilePicture", formData.profilePicture);
-      await registerNonMember(fd);
+
+      // Generate cURL command
+      let curl = 'curl -X POST https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/register-nonmember \\\n  -H "Content-Type: multipart/form-data"';
+      const fields = [
+        ["Name", formData.fullName],
+        ["Password", formData.password],
+        ["Email", formData.emailAddress],
+        ["MobileNo", formData.cellNumber],
+        ["CategoryId", formData.category],
+        ["SubCategoryId", formData.subCategory],
+        ["InstituteName", formData.selectInstitute],
+        ["VehicleNumber", formData.licensePlate],
+        ["CNIC", formData.cnic], // Hardcoded CNIC in cURL
+      ];
+      fields.forEach(([key, value]) => {
+        if (value) curl += ` \\\n  -F \"${key}=${value}\"`;
+      });
+      if (formData.profilePicture) {
+        curl += ` \\\n  -F \"ProfilePicture=@/path/to/file.jpg\"`;
+      }
+      setCurlCommand(curl);
+
+      const response = await registerNonMember(fd);
+      // Try to extract a user-friendly message from the response
+      let message = "Registration successful.";
+      if (response && typeof response === "object") {
+        if (response.message) message = response.message;
+        else if (response.data && typeof response.data === "object" && response.data.message) message = response.data.message;
+      }
+      setShowSuccessModal(true);
       setSubmitStatus("success");
+      setSnackbar({ open: true, message, type: "success" });
+      setCurlCommand(""); // Hide cURL block after success
       localStorage.removeItem("editEducationalVisitorData");
     } catch (err: any) {
-      setSubmitStatus("error: " + (err.message || "Unknown error"));
+      // Try to extract a user-friendly error message
+      let message = "An error occurred.";
+      if (err?.response?.data?.message) message = err.response.data.message;
+      else if (err?.message) message = err.message;
+      setSubmitStatus("error");
+      setSnackbar({ open: true, message, type: "error" });
     }
   };
 
@@ -138,11 +183,60 @@ const AddEducationalVisitorForm: React.FC = () => {
     window.history.back();
   };
 
-  const categories: string[] = ["Resident", "Commercial"];
-  const subCategories: { [key: string]: string[] } = {
-    Resident: ["Owner", "Tenant", "Family Member"],
-    Commercial: ["Retail", "Office", "Restaurant", "Service"]
-  };
+  // Dynamic categories and subcategories logic
+  type Category = { label: string; uuid: string; raw?: any };
+  type SubCategory = { label: string; uuid: string };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    import("@/app/lib/api-client").then(({ apiClient }) => {
+      apiClient
+        .get("/api/nonmember/get-nonmember-category")
+        .then((res) => {
+          const arr = Array.isArray(res) ? res : (res as any[]);
+          if (Array.isArray(arr)) {
+            setCategories(
+              arr.map((item: any) => ({
+                label: item.displayName || item.name,
+                uuid: item.id,
+                raw: item,
+              }))
+            );
+          } else {
+            setCategories([]);
+          }
+        })
+        .catch(() => setCategories([]));
+    });
+  }, []);
+
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (formData.category) {
+      import("@/app/lib/api-client").then(({ apiClient }) => {
+        apiClient
+          .get(`/api/nonmember/get-nonmember-subcategory-bycategoryid?Id=${formData.category}`)
+          .then((res) => {
+            const arr = Array.isArray(res) ? res : (res as any[]);
+            if (Array.isArray(arr)) {
+              setSubCategories(
+                arr.map((item: any) => ({
+                  label: item.displayName || item.name,
+                  uuid: item.id,
+                }))
+              );
+            } else {
+              setSubCategories([]);
+            }
+          })
+          .catch(() => setSubCategories([]));
+      });
+    } else {
+      setSubCategories([]);
+    }
+  }, [formData.category]);
   const institutes: string[] = ["Institute 1", "Institute 2", "Institute 3", "Institute 4"];
 
   // Reusable field box
@@ -192,6 +286,9 @@ const AddEducationalVisitorForm: React.FC = () => {
     />
   ), [handleInputChange]);
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const router = useRouter();
+
   return (
     <div className="w-full bg-[#F9FAFB] shadow-[0_0_15px_rgba(0,0,0,0.25)] rounded-lg p-6">
       <div className="w-full max-w-4xl mx-auto">
@@ -232,6 +329,14 @@ const AddEducationalVisitorForm: React.FC = () => {
             </FieldBox>
           </div>
 
+          {/* Row 2.5: CNIC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="CNIC" required />
+              <TextInput name="cnic" value={formData.cnic} placeholder="Enter CNIC" required />
+            </FieldBox>
+          </div>
+
           {/* Row 3: Category + Sub-Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FieldBox>
@@ -241,26 +346,32 @@ const AddEducationalVisitorForm: React.FC = () => {
                 onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
               >
                 <span className={`text-sm ${formData.category ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.category || "Select (Resident/Commercial)"}
+                  {categories.length === 0
+                    ? "Loading..."
+                    : categories.find((cat) => cat.uuid === formData.category)?.label || "Select Category"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
               {categoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, category: cat, subCategory: "" }));
-                        setCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {cat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {categories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No categories found</div>
+                  ) : (
+                    categories.map((cat) => (
+                      <div
+                        key={cat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, category: cat.uuid, subCategory: "" }));
+                          setCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {cat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -272,7 +383,7 @@ const AddEducationalVisitorForm: React.FC = () => {
                 onClick={() => setSubCategoryDropdownOpen(!subCategoryDropdownOpen)}
               >
                 <span className={`text-sm ${formData.subCategory ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.subCategory || "Select Type"}
+                  {subCategories.find((sub) => sub.uuid === formData.subCategory)?.label || "Select Type"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
@@ -280,16 +391,16 @@ const AddEducationalVisitorForm: React.FC = () => {
               </div>
               {subCategoryDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {(subCategories[formData.category] || []).map((subCat) => (
+                  {subCategories.map((subCat) => (
                     <div
-                      key={subCat}
+                      key={subCat.uuid}
                       className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
                       onClick={() => {
-                        setFormData((p) => ({ ...p, subCategory: subCat }));
+                        setFormData((p) => ({ ...p, subCategory: subCat.uuid }));
                         setSubCategoryDropdownOpen(false);
                       }}
                     >
-                      {subCat}
+                      {subCat.label}
                     </div>
                   ))}
                 </div>
@@ -437,13 +548,23 @@ const AddEducationalVisitorForm: React.FC = () => {
             </button>
           </div>
 
-          {/* Submission Status */}
-          {submitStatus === "success" && (
-            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
-          )}
-          {submitStatus && submitStatus.startsWith("error") && (
-            <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
-          )}
+          {/* Snackbar for API responses */}
+          <Snackbar
+            open={snackbar.open}
+            message={snackbar.message}
+            type={snackbar.type}
+            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          />
+          <SuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => {
+              setShowSuccessModal(false);
+              setCurlCommand("");
+              router.push("/residents");
+            }}
+            title="Registration Successful"
+            message="Educational visitor registered successfully."
+          />
         </form>
       </div>
     </div>

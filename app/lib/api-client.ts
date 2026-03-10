@@ -32,7 +32,7 @@ export async function fetchNonMemberVerificationList({
 }
 // Utility to POST form-data (with files) to register-nonmember API (external endpoint)
 export async function registerNonMember(formData: FormData) {
-  const response = await fetch("https://dfpwebp.dhakarachi.org/api/nonmember/register-nonmember", {
+  const response = await fetch("https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/register-nonmember", {
     method: "POST",
     body: formData,
   });
