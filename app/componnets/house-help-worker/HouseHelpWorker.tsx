@@ -39,7 +39,7 @@ const HouseHelpWorker: React.FC = () => {
     setLoading(true);
     setError(null);
     fetchNonMemberVerificationList({
-      memberType: "Houes-Help Worker",
+      memberType: "House-Help Worker",
       pageNumber: currentPage,
       pageSize: rowsPerPage,
     })

@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import SuccessModal from "../shared/SuccessModal";
+import Snackbar from "../shared/Snackbar";
 import { registerNonMember } from "@/app/lib/api-client";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { apiClient } from "@/app/lib/api-client";
 
 type FormData = {
   fullName: string;
@@ -13,7 +18,10 @@ type FormData = {
   employerRegistrationNo: string;
   profilePicture: File | null;
   serviceCardDocument: File | null;
+  cnic: string;
 };
+
+type SubCategory = { label: string; uuid: string };
 
 const AddCommercialEmployeeForm: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -34,6 +42,7 @@ const AddCommercialEmployeeForm: React.FC = () => {
     employerRegistrationNo: "",
     profilePicture: null,
     serviceCardDocument: null,
+    cnic: "",
   });
 
   useEffect(() => {
@@ -91,6 +100,12 @@ const AddCommercialEmployeeForm: React.FC = () => {
   };
 
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [curlCommand, setCurlCommand] = useState<string>("");
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; type: "success" | "error" | "info" }>({ open: false, message: "", type: "info" });
+
+  const router = useRouter();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitStatus(null);
@@ -102,14 +117,58 @@ const AddCommercialEmployeeForm: React.FC = () => {
       fd.append("MobileNo", formData.cellNumber);
       fd.append("CategoryId", formData.category);
       fd.append("SubCategoryId", formData.subCategory);
-      fd.append("EmployeeRegistrationNo", formData.employerRegistrationNo);
+      fd.append("EmployerRegistrationNo", formData.employerRegistrationNo);
+      fd.append("CNIC", formData.cnic); // Use user input
       if (formData.profilePicture) fd.append("ProfilePicture", formData.profilePicture);
-      if (formData.serviceCardDocument) fd.append("ServiceCardNumber", formData.serviceCardDocument);
+      if (formData.serviceCardDocument) fd.append("ServiceCardDocument", formData.serviceCardDocument);
+
+      // Generate cURL command
+      let curl = 'curl -X POST https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/register-nonmember \\\n  -H "Content-Type: multipart/form-data"';
+      const fields = [
+        ["Name", formData.fullName],
+        ["Password", formData.password],
+        ["Email", formData.emailAddress],
+        ["MobileNo", formData.cellNumber],
+        ["CategoryId", formData.category],
+        ["SubCategoryId", formData.subCategory],
+        ["EmployerRegistrationNo", formData.employerRegistrationNo],
+        ["CNIC", formData.cnic],
+      ];
+      fields.forEach(([key, value]) => {
+        if (value) curl += ` \\\n  -F \"${key}=${value}\"`;
+      });
+      if (formData.profilePicture) {
+        curl += ` \\\n  -F \"ProfilePicture=@/path/to/file.jpg\"`;
+      }
+      if (formData.serviceCardDocument) {
+        curl += ` \\\n  -F \"ServiceCardDocument=@/path/to/servicecard.pdf\"`;
+      }
+      setCurlCommand(curl);
+
       await registerNonMember(fd);
+      setShowSuccessModal(true);
       setSubmitStatus("success");
+      setSnackbar({ open: true, message: "Registration successful!", type: "success" });
+      setCurlCommand(""); // Hide cURL block after success
       localStorage.removeItem("editCommercialEmployeeData");
     } catch (err: any) {
-      setSubmitStatus("error: " + (err.message || "Unknown error"));
+      let message = "Unknown error";
+      if (err?.message) {
+        try {
+          const parsed = JSON.parse(err.message);
+          if (parsed && parsed.detail) {
+            message = parsed.detail;
+          } else if (parsed && parsed.title) {
+            message = parsed.title;
+          } else {
+            message = err.message;
+          }
+        } catch {
+          message = err.message;
+        }
+      }
+      setSubmitStatus("error: " + message);
+      setSnackbar({ open: true, message, type: "error" });
     }
   };
 
@@ -118,11 +177,59 @@ const AddCommercialEmployeeForm: React.FC = () => {
     window.history.back();
   };
 
-  const categories: string[] = ["Resident", "Commercial"];
-  const subCategories: { [key: string]: string[] } = {
-    Resident: ["Owner", "Tenant", "Family Member"],
-    Commercial: ["Retail", "Office", "Restaurant", "Service"]
+  // Fetch categories from API
+  type Category = { label: string; uuid: string; raw?: any };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  // Helper to get auth token and cookie (match api-client logic)
+  const getAuthToken = () => {
+    if (typeof window !== "undefined") {
+      // Try to match api-client logic: check localStorage, sessionStorage, and cookies
+      let token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+      if (!token && document.cookie) {
+        // Try to extract token from cookies if present
+        const match = document.cookie.match(/(?:^|; )token=([^;]*)/);
+        if (match) token = decodeURIComponent(match[1]);
+      }
+      return token;
+    }
+    return "";
   };
+
+  // Fetch categories on mount using apiClient (inherits auth/interceptors)
+  useEffect(() => {
+    apiClient
+      .get("/api/nonmember/get-nonmember-category")
+      .then((res) => {
+        // Log the full response for debugging
+        // eslint-disable-next-line no-console
+        console.log("Full categories API response:", res);
+        const arr = Array.isArray(res) ? res : (res as any[]);
+        if (Array.isArray(arr)) {
+          const mapped = arr.map((item: any) => ({
+            label: item.displayName || item.name,
+            uuid: item.id,
+            raw: item,
+          }));
+          setCategories(mapped);
+          // Debug: log categories to verify mapping
+          // eslint-disable-next-line no-console
+          console.log("Mapped categories:", mapped);
+        } else {
+          setCategories([]);
+        }
+      })
+      .catch((err) => {
+        setCategories([]);
+        // eslint-disable-next-line no-console
+        console.error("Failed to fetch categories", err);
+        if (err?.response) {
+          // eslint-disable-next-line no-console
+          console.error("Error response data:", err.response.data);
+        }
+      });
+  }, []);
   const employerRegistrations: string[] = [
     "REG-001", "REG-002", "REG-003", "REG-004", "REG-005"
   ];
@@ -174,6 +281,30 @@ const AddCommercialEmployeeForm: React.FC = () => {
     />
   ), [handleInputChange]);
 
+  // Fetch subcategories when category changes using apiClient
+  useEffect(() => {
+    if (formData.category) {
+      apiClient
+        .get(`/api/nonmember/get-nonmember-subcategory-bycategoryid?Id=${formData.category}`)
+        .then((res) => {
+          const arr = Array.isArray(res) ? res : (res as any[]);
+          if (Array.isArray(arr)) {
+            setSubCategories(
+              arr.map((item: any) => ({
+                label: item.displayName || item.name,
+                uuid: item.id,
+              }))
+            );
+          } else {
+            setSubCategories([]);
+          }
+        })
+        .catch(() => setSubCategories([]));
+    } else {
+      setSubCategories([]);
+    }
+  }, [formData.category]);
+
   return (
     <div className="w-full bg-[#F9FAFB] shadow-[0_0_15px_rgba(0,0,0,0.25)] rounded-lg p-6">
       <div className="w-full max-w-4xl mx-auto">
@@ -214,6 +345,14 @@ const AddCommercialEmployeeForm: React.FC = () => {
             </FieldBox>
           </div>
 
+          {/* Row 2.5: CNIC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="CNIC" required />
+              <TextInput name="cnic" value={formData.cnic} placeholder="Enter CNIC" required />
+            </FieldBox>
+          </div>
+
           {/* Row 3: Category + Sub-Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FieldBox>
@@ -223,26 +362,32 @@ const AddCommercialEmployeeForm: React.FC = () => {
                 onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
               >
                 <span className={`text-sm ${formData.category ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.category || "Select (Resident/Commercial)"}
+                  {categories.length === 0
+                    ? "Loading..."
+                    : categories.find((cat) => cat.uuid === formData.category)?.label || "Select Category"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
               {categoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, category: cat, subCategory: "" }));
-                        setCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {cat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {categories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No categories found</div>
+                  ) : (
+                    categories.map((cat) => (
+                      <div
+                        key={cat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, category: cat.uuid, subCategory: "" }));
+                          setCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {cat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -254,7 +399,7 @@ const AddCommercialEmployeeForm: React.FC = () => {
                 onClick={() => setSubCategoryDropdownOpen(!subCategoryDropdownOpen)}
               >
                 <span className={`text-sm ${formData.subCategory ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.subCategory || "Select Type"}
+                  {subCategories.find((sub) => sub.uuid === formData.subCategory)?.label || "Select Type"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
@@ -262,16 +407,16 @@ const AddCommercialEmployeeForm: React.FC = () => {
               </div>
               {subCategoryDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {(subCategories[formData.category] || []).map((subCat) => (
+                  {subCategories.map((subCat) => (
                     <div
-                      key={subCat}
+                      key={subCat.uuid}
                       className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
                       onClick={() => {
-                        setFormData((p) => ({ ...p, subCategory: subCat }));
+                        setFormData((p) => ({ ...p, subCategory: subCat.uuid }));
                         setSubCategoryDropdownOpen(false);
                       }}
                     >
-                      {subCat}
+                      {subCat.label}
                     </div>
                   ))}
                 </div>
@@ -454,12 +599,22 @@ const AddCommercialEmployeeForm: React.FC = () => {
           </div>
 
           {/* Submission Status */}
-          {submitStatus === "success" && (
-            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
-          )}
-          {submitStatus && submitStatus.startsWith("error") && (
-            <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
-          )}
+          <SuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => {
+              setShowSuccessModal(false);
+              setCurlCommand("");
+              router.push("/residents");
+            }}
+            title="Registration Successful"
+            message="Member registered successfully."
+          />
+          <Snackbar
+            open={snackbar.open}
+            message={snackbar.message}
+            type={snackbar.type}
+            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          />
         </form>
       </div>
     </div>

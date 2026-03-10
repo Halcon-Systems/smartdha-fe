@@ -16,7 +16,8 @@ interface EducationalVisitorType {
   email: string;
   phone: string;
   subcategory: string;
-  institute: string;
+  institute?: string;
+  instituteName?: string;
   vehicleInfo: string;
 }
 
@@ -42,7 +43,7 @@ const EducationalVisitor: React.FC = () => {
     setLoading(true);
     setError(null);
     fetchNonMemberVerificationList({
-      memberType: "Educational Visitor",
+      memberType: "Education",
       pageNumber: currentPage,
       pageSize: rowsPerPage,
     })
@@ -159,7 +160,7 @@ const EducationalVisitor: React.FC = () => {
                   <td className="px-4 py-3 text-sm">{visitor.email}</td>
                   <td className="px-4 py-3 text-sm">{visitor.phone}</td>
                   <td className="px-4 py-3 text-sm">{visitor.subcategory}</td>
-                  <td className="px-4 py-3 text-sm">{visitor.institute}</td>
+                  <td className="px-4 py-3 text-sm">{visitor.instituteName || visitor.institute || "-"}</td>
                   <td className="px-4 py-3 text-sm">{visitor.vehicleInfo}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-3">

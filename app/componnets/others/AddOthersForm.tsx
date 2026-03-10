@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import SuccessModal from "../shared/SuccessModal";
+import Snackbar from "../shared/Snackbar";
 import { registerNonMember } from "@/app/lib/api-client";
 
 type FormData = {
@@ -49,7 +51,15 @@ const AddOthersForm: React.FC = () => {
   });
 
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
-  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
+
+  // Redirect to residents list after success
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    window.location.href = "/residents";
+  };
 
   useEffect(() => {
     const editData = localStorage.getItem("editOthersData");
@@ -110,7 +120,6 @@ const AddOthersForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitStatus(null);
-    setApiResponse(null);
     try {
       const fd = new window.FormData();
       // Map fields to API keys
@@ -131,13 +140,24 @@ const AddOthersForm: React.FC = () => {
       if (formData.serviceCardNumber) fd.append("ServiceCardNumber", formData.serviceCardNumber);
       if (formData.utilityBill) fd.append("UtilityBill", formData.utilityBill);
       // Add other fields as needed (ZoneId, PlotNo, etc.)
-      const response = await registerNonMember(fd);
-      setApiResponse(response);
+      await registerNonMember(fd);
       setSubmitStatus("success");
+      setShowSuccessModal(true);
       localStorage.removeItem("editOthersData");
     } catch (err: any) {
-      setSubmitStatus("error: " + (err.message || "Unknown error"));
-      setApiResponse(null);
+      // Show only the 'detail' field if present, otherwise fallback to message or string
+      let errorMsg = "Unknown error";
+      if (err && typeof err === "object" && "detail" in err && typeof err.detail === "string") {
+        errorMsg = err.detail;
+      } else if (err?.message) {
+        errorMsg = err.message;
+      } else if (typeof err === "string") {
+        errorMsg = err;
+      }
+      errorMsg = String(errorMsg).trim();
+      setSubmitStatus("error: " + errorMsg);
+      setSnackbarMsg(errorMsg);
+      setSnackbarOpen(true);
     }
   };
 
@@ -146,15 +166,60 @@ const AddOthersForm: React.FC = () => {
     window.history.back();
   };
 
-  const categories: string[] = ["Resident", "Commercial", "House-help Worker", "Education", "Visitor", "Others"];
-  const subCategories: { [key: string]: string[] } = {
-    "House-help Worker": ["Staff", "Maid", "Driver", "Gardner", "Cook", "Guard"],
-    Resident: ["Owner", "Tenant"],
-    Commercial: ["Retail", "Office", "Restaurant", "Service"],
-    Education: ["Student", "Parent", "Faculty"],
-    Visitor: ["Temporary Visitor"],
-    Others: ["Please Specify"]
-  };
+  // Dynamic categories and subcategories logic
+  type Category = { label: string; uuid: string; raw?: any };
+  type SubCategory = { label: string; uuid: string };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    import("@/app/lib/api-client").then(({ apiClient }) => {
+      apiClient
+        .get("/api/nonmember/get-nonmember-category")
+        .then((res) => {
+          const arr = Array.isArray(res) ? res : (res as any[]);
+          if (Array.isArray(arr)) {
+            setCategories(
+              arr.map((item: any) => ({
+                label: item.displayName || item.name,
+                uuid: item.id,
+                raw: item,
+              }))
+            );
+          } else {
+            setCategories([]);
+          }
+        })
+        .catch(() => setCategories([]));
+    });
+  }, []);
+
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (formData.category) {
+      import("@/app/lib/api-client").then(({ apiClient }) => {
+        apiClient
+          .get(`/api/nonmember/get-nonmember-subcategory-bycategoryid?Id=${formData.category}`)
+          .then((res) => {
+            const arr = Array.isArray(res) ? res : (res as any[]);
+            if (Array.isArray(arr)) {
+              setSubCategories(
+                arr.map((item: any) => ({
+                  label: item.displayName || item.name,
+                  uuid: item.id,
+                }))
+              );
+            } else {
+              setSubCategories([]);
+            }
+          })
+          .catch(() => setSubCategories([]));
+      });
+    } else {
+      setSubCategories([]);
+    }
+  }, [formData.category]);
 
   // Reusable field box
   const FieldBox = useCallback(({ children }: { children: React.ReactNode }) => (
@@ -210,7 +275,7 @@ const AddOthersForm: React.FC = () => {
         {/* Header */}
         <div className="mb-6">
           <p className="text-lg font-semibold text-black">
-            {isEditing ? "Edit others details" : "Please provide others details below!"}
+            Please provide other details below
           </p>
         </div>
 
@@ -254,7 +319,9 @@ const AddOthersForm: React.FC = () => {
                 <span
                   className={`text-sm ${formData.category ? "text-gray-700" : "text-gray-400"}`}
                 >
-                  {formData.category || "Select Category"}
+                  {categories.length === 0
+                    ? "Loading..."
+                    : categories.find((cat) => cat.uuid === formData.category)?.label || "Select Category"}
                 </span>
                 <svg
                   width="16"
@@ -268,19 +335,23 @@ const AddOthersForm: React.FC = () => {
                 </svg>
               </div>
               {categoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, category: cat, subCategory: "" }));
-                        setCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {cat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {categories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No categories found</div>
+                  ) : (
+                    categories.map((cat) => (
+                      <div
+                        key={cat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, category: cat.uuid, subCategory: "" }));
+                          setCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {cat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -294,7 +365,7 @@ const AddOthersForm: React.FC = () => {
                 <span
                   className={`text-sm ${formData.subCategory ? "text-gray-700" : "text-gray-400"}`}
                 >
-                  {formData.subCategory || "Select Type"}
+                  {subCategories.find((sub) => sub.uuid === formData.subCategory)?.label || "Select Type"}
                 </span>
                 <svg
                   width="16"
@@ -308,19 +379,23 @@ const AddOthersForm: React.FC = () => {
                 </svg>
               </div>
               {subCategoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {(subCategories[formData.category] || []).map((subCat) => (
-                    <div
-                      key={subCat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, subCategory: subCat }));
-                        setSubCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {subCat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {subCategories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No subcategories found</div>
+                  ) : (
+                    subCategories.map((subCat) => (
+                      <div
+                        key={subCat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, subCategory: subCat.uuid }));
+                          setSubCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {subCat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -408,19 +483,21 @@ const AddOthersForm: React.FC = () => {
             </button>
           </div>
 
-          {/* Submission Status */}
-          {submitStatus === "success" && (
-            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
+          {/* Submission Status & Success Modal */}
+          {showSuccessModal && (
+            <SuccessModal
+              isOpen={showSuccessModal}
+              onClose={handleSuccessClose}
+              title="Success"
+              message="Registration successful!"
+            />
           )}
-          {submitStatus && submitStatus.startsWith("error") && (
-            <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
-          )}
-          {apiResponse && (
-            <div className="mt-4">
-              <div className="font-semibold mb-1">API Response:</div>
-              <pre className="bg-gray-100 rounded p-2 text-xs overflow-x-auto max-h-64">{JSON.stringify(apiResponse, null, 2)}</pre>
-            </div>
-          )}
+          <Snackbar
+            open={snackbarOpen}
+            message={snackbarMsg}
+            onClose={() => setSnackbarOpen(false)}
+            type="error"
+          />
         </form>
       </div>
     </div>

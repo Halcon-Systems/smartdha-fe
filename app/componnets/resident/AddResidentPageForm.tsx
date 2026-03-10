@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import SuccessModal from "../shared/SuccessModal";
+import Snackbar from "../shared/Snackbar";
 import { registerNonMember } from "@/app/lib/api-client";
+import { useRouter } from "next/navigation";
 
 type Tab = "resident" | "commercial";
 
@@ -25,6 +28,7 @@ type FormData = {
   profilePicture: File | null;
   proofOfPossession: File | null;
   utilityBill: File | null;
+  cnic: string;
 };
 
 const AddResidentPageForm: React.FC<{
@@ -64,6 +68,7 @@ const AddResidentPageForm: React.FC<{
     profilePicture: null,
     proofOfPossession: null,
     utilityBill: null,
+    cnic: "",
   });
 
   useEffect(() => {
@@ -90,6 +95,7 @@ const AddResidentPageForm: React.FC<{
         plotNoNumeric: parsed.plotNoNumeric ?? prev.plotNoNumeric,
         plotNoAlphabetic: parsed.plotNoAlphabetic ?? prev.plotNoAlphabetic,
         plotNoAlphaNumeric: parsed.plotNoAlphaNumeric ?? prev.plotNoAlphaNumeric,
+        cnic: parsed.cnic ?? prev.cnic,
       }));
 
       const selectedTab: Tab = parsed.category?.toLowerCase() === "commercial" ? "commercial" : "resident";
@@ -127,6 +133,9 @@ const AddResidentPageForm: React.FC<{
   };
 
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [curlCommand, setCurlCommand] = useState<string>("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; type: "success" | "error" | "info" }>({ open: false, message: "", type: "info" });
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitStatus(null);
@@ -148,11 +157,49 @@ const AddResidentPageForm: React.FC<{
       if (formData.profilePicture) fd.append("ProfilePicture", formData.profilePicture);
       if (formData.proofOfPossession) fd.append("ProofOfPossession", formData.proofOfPossession);
       if (formData.utilityBill) fd.append("UtilityBill", formData.utilityBill);
+      fd.append("CNIC", formData.cnic);
+
+      // Generate cURL command
+      let curl = 'curl -X POST https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/register-nonmember \\\n  -H "Content-Type: multipart/form-data"';
+      const fields = [
+        ["Name", formData.fullName],
+        ["Password", formData.password],
+        ["Email", formData.emailAddress],
+        ["MobileNo", formData.cellNumber],
+        ["CategoryId", formData.category],
+        ["SubCategoryId", formData.subCategory],
+        ["PhaseId", formData.phase],
+        ["ZoneId", formData.zone],
+        ["Khayaban", formData.khayaban],
+        ["LaneNo", formData.laneStreetNo],
+        ["Floors", formData.floor],
+        ["PlotNo", formData.plotNoNumeric],
+        ["PlotNoAlphabetic", formData.plotNoAlphabetic],
+        ["PlotNoAlphaNumeric", formData.plotNoAlphaNumeric],
+        ["CNIC", formData.cnic],
+      ];
+      fields.forEach(([key, value]) => {
+        if (value) curl += ` \\\n  -F \"${key}=${value}\"`;
+      });
+      if (formData.profilePicture) {
+        curl += ` \\\n  -F \"ProfilePicture=@/path/to/file.jpg\"`;
+      }
+      if (formData.proofOfPossession) {
+        curl += ` \\\n  -F \"ProofOfPossession=@/path/to/proof.jpg\"`;
+      }
+      if (formData.utilityBill) {
+        curl += ` \\\n  -F \"UtilityBill=@/path/to/utility.jpg\"`;
+      }
+      setCurlCommand(curl);
+
       await registerNonMember(fd);
+      setShowSuccessModal(true);
       setSubmitStatus("success");
+      setSnackbar({ open: true, message: "Registration successful!", type: "success" });
       localStorage.removeItem("editResidentData");
     } catch (err: any) {
       setSubmitStatus("error: " + (err.message || "Unknown error"));
+      setSnackbar({ open: true, message: err.message || "Unknown error", type: "error" });
     }
   };
 
@@ -161,13 +208,77 @@ const AddResidentPageForm: React.FC<{
     window.history.back();
   };
 
-  const categories: string[] = ["Resident", "Commercial"];
-  const subCategories: { [key: string]: string[] } = {
-    Resident: ["Owner", "Tenant", "Family Member"],
-    Commercial: ["Retail", "Office", "Restaurant", "Service"]
-  };
-  const phases: string[] = ["Phase 1", "Phase 2", "Phase 3", "Phase 4", "Phase 5", "Phase 6", "Phase 7", "Phase 8"];
-  const zones: string[] = ["Zone A", "Zone B", "Zone C", "Zone D"];
+  // Dynamic categories and subcategories logic
+  type Category = { label: string; uuid: string; raw?: any };
+  type SubCategory = { label: string; uuid: string };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    import("@/app/lib/api-client").then(({ apiClient }) => {
+      apiClient
+        .get("/api/nonmember/get-nonmember-category")
+        .then((res) => {
+          const arr = Array.isArray(res) ? res : (res as any[]);
+          if (Array.isArray(arr)) {
+            setCategories(
+              arr.map((item: any) => ({
+                label: item.displayName || item.name,
+                uuid: item.id,
+                raw: item,
+              }))
+            );
+          } else {
+            setCategories([]);
+          }
+        })
+        .catch(() => setCategories([]));
+    });
+  }, []);
+
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (formData.category) {
+      import("@/app/lib/api-client").then(({ apiClient }) => {
+        apiClient
+          .get(`/api/nonmember/get-nonmember-subcategory-bycategoryid?Id=${formData.category}`)
+          .then((res) => {
+            const arr = Array.isArray(res) ? res : (res as any[]);
+            if (Array.isArray(arr)) {
+              setSubCategories(
+                arr.map((item: any) => ({
+                  label: item.displayName || item.name,
+                  uuid: item.id,
+                }))
+              );
+            } else {
+              setSubCategories([]);
+            }
+          })
+          .catch(() => setSubCategories([]));
+      });
+    } else {
+      setSubCategories([]);
+    }
+  }, [formData.category]);
+  const phases = [
+    { label: "Phase 1", uuid: "7cc92216-4327-4ac0-baa0-8a9ed7647e9f" },
+    { label: "Phase 2", uuid: "30858a95-6a99-4822-963e-253c92adbdc3" },
+    { label: "Phase 3", uuid: "613ece0b-1e3f-4ce5-b781-b595d4b8ebd5" },
+    { label: "Phase 4", uuid: "cc208f88-558e-4ac0-be9d-c43f16f7b72b" },
+    { label: "Phase 5", uuid: "d5b82c1f-ff55-4621-9dec-4175c6a489d6" },
+    { label: "Phase 6", uuid: "b881af67-4f27-49d8-a4e1-e591fd060329" },
+    { label: "Phase 7", uuid: "e6f5ba71-4fa8-41b5-a670-52beb235597f" },
+    { label: "Phase 8", uuid: "085c320e-5e9e-43e2-871e-6c06691c3968" }
+  ];
+  const zones = [
+    { label: "Zone-B", uuid: "3b87cdef-8531-459a-acb6-12e054d099cc" },
+    { label: "Zone 1", uuid: "c7ce1457-0065-4b42-a9a5-38590f82acfe" },
+    { label: "Zone-A", uuid: "f7224696-af90-4939-8580-3e208f4659e1" },
+    { label: "Zone 2", uuid: "158356f9-a03a-4adc-97ba-6a6ab3c59786" }
+    // Add more as needed
+  ];
 
   // Reusable field box
   const FieldBox = useCallback(({ children }: { children: React.ReactNode }) => (
@@ -216,6 +327,8 @@ const AddResidentPageForm: React.FC<{
     />
   ), [handleInputChange]);
 
+  const router = useRouter();
+
   return (
     <div className="w-full bg-[#F9FAFB] shadow-[0_0_15px_rgba(0,0,0,0.25)] rounded-lg p-6">
       <div className="w-full max-w-4xl mx-auto">
@@ -243,6 +356,7 @@ const AddResidentPageForm: React.FC<{
             </FieldBox>
           </div>
 
+
           {/* Row 2: Password + Cell Number */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FieldBox>
@@ -256,6 +370,14 @@ const AddResidentPageForm: React.FC<{
             </FieldBox>
           </div>
 
+          {/* Row 2.5: CNIC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="CNIC" required />
+              <TextInput name="cnic" value={formData.cnic} placeholder="Enter CNIC" required />
+            </FieldBox>
+          </div>
+
           {/* Row 3: Category + Sub-Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FieldBox>
@@ -265,26 +387,32 @@ const AddResidentPageForm: React.FC<{
                 onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
               >
                 <span className={`text-sm ${formData.category ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.category || "Select (Resident/Commercial)"}
+                  {categories.length === 0
+                    ? "Loading..."
+                    : categories.find((cat) => cat.uuid === formData.category)?.label || "Select Category"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
               {categoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, category: cat, subCategory: "" }));
-                        setCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {cat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {categories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No categories found</div>
+                  ) : (
+                    categories.map((cat) => (
+                      <div
+                        key={cat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, category: cat.uuid, subCategory: "" }));
+                          setCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {cat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -296,26 +424,30 @@ const AddResidentPageForm: React.FC<{
                 onClick={() => setSubCategoryDropdownOpen(!subCategoryDropdownOpen)}
               >
                 <span className={`text-sm ${formData.subCategory ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.subCategory || "Select Type"}
+                  {subCategories.find((sub) => sub.uuid === formData.subCategory)?.label || "Select Type"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
               {subCategoryDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
-                  {(subCategories[formData.category] || []).map((subCat) => (
-                    <div
-                      key={subCat}
-                      className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
-                      onClick={() => {
-                        setFormData((p) => ({ ...p, subCategory: subCat }));
-                        setSubCategoryDropdownOpen(false);
-                      }}
-                    >
-                      {subCat}
-                    </div>
-                  ))}
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg max-h-60 overflow-y-auto">
+                  {subCategories.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-400">No subcategories found</div>
+                  ) : (
+                    subCategories.map((subCat) => (
+                      <div
+                        key={subCat.uuid}
+                        className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
+                        onClick={() => {
+                          setFormData((p) => ({ ...p, subCategory: subCat.uuid }));
+                          setSubCategoryDropdownOpen(false);
+                        }}
+                      >
+                        {subCat.label}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </FieldBox>
@@ -330,7 +462,7 @@ const AddResidentPageForm: React.FC<{
                 onClick={() => setPhaseDropdownOpen(!phaseDropdownOpen)}
               >
                 <span className={`text-sm ${formData.phase ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.phase || "Select here"}
+                  {phases.find((p) => p.uuid === formData.phase)?.label || "Select Phase"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
@@ -340,14 +472,14 @@ const AddResidentPageForm: React.FC<{
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
                   {phases.map((phase) => (
                     <div
-                      key={phase}
+                      key={phase.uuid}
                       className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
                       onClick={() => {
-                        setFormData((p) => ({ ...p, phase }));
+                        setFormData((p) => ({ ...p, phase: phase.uuid }));
                         setPhaseDropdownOpen(false);
                       }}
                     >
-                      {phase}
+                      {phase.label}
                     </div>
                   ))}
                 </div>
@@ -361,7 +493,7 @@ const AddResidentPageForm: React.FC<{
                 onClick={() => setZoneDropdownOpen(!zoneDropdownOpen)}
               >
                 <span className={`text-sm ${formData.zone ? "text-gray-700" : "text-gray-400"}`}>
-                  {formData.zone || "Select Type"}
+                  {zones.find((z) => z.uuid === formData.zone)?.label || "Select Zone"}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
@@ -371,14 +503,14 @@ const AddResidentPageForm: React.FC<{
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg z-10 mt-1 shadow-lg">
                   {zones.map((zone) => (
                     <div
-                      key={zone}
+                      key={zone.uuid}
                       className="px-4 py-2.5 text-sm text-gray-700 cursor-pointer hover:bg-green-50"
                       onClick={() => {
-                        setFormData((p) => ({ ...p, zone }));
+                        setFormData((p) => ({ ...p, zone: zone.uuid }));
                         setZoneDropdownOpen(false);
                       }}
                     >
-                      {zone}
+                      {zone.label}
                     </div>
                   ))}
                 </div>
@@ -617,12 +749,32 @@ const AddResidentPageForm: React.FC<{
           </div>
 
           {/* Submission Status */}
-          {submitStatus === "success" && (
-            <div className="mt-4 text-green-600 font-semibold">Successfully submitted!</div>
-          )}
           {submitStatus && submitStatus.startsWith("error") && (
             <div className="mt-4 text-red-600 font-semibold">{submitStatus}</div>
           )}
+          {/* Show cURL command after submit */}
+          {curlCommand && !showSuccessModal && (
+            <div className="mt-4 p-4 bg-gray-100 rounded text-xs font-mono">
+              <div className="mb-2 font-bold">Actual cURL:</div>
+              <pre>{curlCommand}</pre>
+            </div>
+          )}
+          <SuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => {
+              setShowSuccessModal(false);
+              setCurlCommand(""); // Hide cURL block after success
+              router.push("/residents"); // Navigate to /residents
+            }}
+            title="Registration Successful"
+            message="Member registered successfully."
+          />
+          <Snackbar
+            open={snackbar.open}
+            message={snackbar.message}
+            type={snackbar.type}
+            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          />
         </form>
       </div>
     </div>

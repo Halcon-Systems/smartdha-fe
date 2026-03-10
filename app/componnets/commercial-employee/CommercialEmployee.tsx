@@ -40,7 +40,7 @@ const CommercialEmployee: React.FC = () => {
     setLoading(true);
     setError(null);
     fetchNonMemberVerificationList({
-      memberType: "Commercial Employee",
+      memberType: "Commercial Employees",
       pageNumber: currentPage,
       pageSize: rowsPerPage,
     })
