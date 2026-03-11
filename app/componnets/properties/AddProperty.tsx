@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SuccessModal from "../shared/SuccessModal";
 import { useRouter } from "next/navigation";
 import { API_CONFIG, API_ENDPOINTS } from "../../lib/api-config";
@@ -40,6 +40,59 @@ const AddProperty: React.FC = () => {
     proofOfPossession: null,
     utilityBill: null,
   });
+
+  // Track edit mode
+  const [isEditMode, setIsEditMode] = useState(false);
+  // Prefill logic for edit
+  useEffect(() => {
+    const editDataRaw = localStorage.getItem('editPropertyData');
+    if (!editDataRaw) return;
+    setIsEditMode(true);
+    try {
+      const { id } = JSON.parse(editDataRaw);
+      if (id) {
+        // Fetch property by id
+        const fetchProperty = async () => {
+          try {
+            const token = localStorage.getItem('accessToken') || localStorage.getItem('authToken') || '';
+            const authHeader = token ? `Bearer ${token}` : '';
+            const response = await fetch(`https://dfpwebp.dhakarachi.org/api/smartdha/residenceproperty/get-property-by-id/${id}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authHeader ? { Authorization: authHeader } : {}),
+              },
+            });
+            const result = await response.json();
+            if (result.success && result.data) {
+              const d = result.data;
+              setFormData((prev) => ({
+                ...prev,
+                category: d.categoryName || '',
+                type: d.typeName || '',
+                phase: d.phaseName || '',
+                zone: d.zoneName || '',
+                khayaban: d.khayaban || '',
+                floor: d.floor ? String(d.floor) : '',
+                laneStreetNo: d.streetNo || '',
+                possessionType: d.possessionTypeName || '',
+                plotNoNumeric: d.plotNo ? String(d.plotNo) : '',
+                plotNoAlpha: d.plot || '',
+                plotNoCombined: d.plotNo && d.plot ? `${d.plotNo}-${d.plot}` : '',
+                // status: d.status || 'Active',
+                // Attachments are not prefilled as files
+              }));
+            }
+          } catch (err) {
+            // ignore
+          }
+        };
+        fetchProperty();
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, []);
 
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [utilityPreview, setUtilityPreview] = useState<string | null>(null);
@@ -87,6 +140,20 @@ const AddProperty: React.FC = () => {
     setError(null);
     setSuccess(null);
 
+    // Check if in edit mode
+    const editDataRaw = localStorage.getItem('editPropertyData');
+    let isEditMode = false;
+    let editId = null;
+    if (editDataRaw) {
+      try {
+        const parsed = JSON.parse(editDataRaw);
+        if (parsed && parsed.id) {
+          isEditMode = true;
+          editId = parsed.id;
+        }
+      } catch {}
+    }
+
     try {
       // Build FormData to match the working curl request
       const form = new FormData();
@@ -110,6 +177,9 @@ const AddProperty: React.FC = () => {
       if (formData.utilityBill) {
         form.append('UtilityBillAttachment', formData.utilityBill);
       }
+      if (isEditMode && editId) {
+        form.append('Id', editId);
+      }
 
       // Replace with your actual token logic
       // Try all possible token keys used in the app
@@ -123,7 +193,10 @@ const AddProperty: React.FC = () => {
         body: form,
       };
 
-      const url = `${API_CONFIG.baseURL}${API_ENDPOINTS.PROPERTIES.CREATE}`;
+      // Use update endpoint if in edit mode, otherwise create
+      const url = isEditMode
+        ? 'https://dfpwebp.dhakarachi.org/api/smartdha/residenceproperty/update'
+        : `${API_CONFIG.baseURL}${API_ENDPOINTS.PROPERTIES.CREATE}`;
       const response = await fetch(url, fetchOptions);
       const rawText = await response.text();
       let result;
@@ -135,10 +208,13 @@ const AddProperty: React.FC = () => {
         // ignore
       }
       if (response.ok && parsed && (result.success || result.succeeded)) {
-        setSuccess("Property Created Successfully!");
+        setSuccess(isEditMode ? "Property Updated Successfully!" : "Property Created Successfully!");
         setShowSuccessModal(true);
+        if (isEditMode) {
+          localStorage.removeItem('editPropertyData');
+        }
       } else {
-        let errorMsg = 'Failed to add property.';
+        let errorMsg = isEditMode ? 'Failed to update property.' : 'Failed to add property.';
         if (parsed && result && result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
           errorMsg += ' ' + result.errors[0];
         } else if (parsed && result && result.message) {
@@ -255,7 +331,7 @@ const AddProperty: React.FC = () => {
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <p className="text-lg font-semibold text-black">
-            Please provide property details below!
+            {isEditMode ? 'Update Property' : 'Add Property'}
           </p>
           <ToggleSwitch
             isOn={formData.status === "Active"}
@@ -280,8 +356,8 @@ const AddProperty: React.FC = () => {
             setShowSuccessModal(false);
             router.push("/properties");
           }}
-          title="Property Created Successfully!"
-          message="The property has been added to the system successfully."
+          title={isEditMode ? "Property Updated Successfully!" : "Property Created Successfully!"}
+          message={isEditMode ? "The property has been updated in the system successfully." : "The property has been added to the system successfully."}
         />
         <form onSubmit={handleSubmit}>
           {/* Row 1: Category + Type */}
@@ -684,7 +760,9 @@ const AddProperty: React.FC = () => {
               disabled={loading}
               className="py-3 rounded-xl bg-[#30B33D] text-white text-[15px] font-semibold cursor-pointer shadow-md hover:bg-[#28a035] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Adding Property...' : 'Add Property'}
+              {loading
+                ? isEditMode ? 'Updating Property...' : 'Adding Property...'
+                : isEditMode ? 'Update Property' : 'Add Property'}
             </button>
           </div>
         </form>

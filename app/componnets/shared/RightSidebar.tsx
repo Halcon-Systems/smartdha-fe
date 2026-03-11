@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import SvgIcon from "./SvgIcon";
 import { AppNotification, MemberStats, MOCK_NOTIFICATIONS, MOCK_STATS } from "@/app/utils/RightSidebarData";
-// import { Phone, Mail, Bell, Users } from "lucide-react";
+import { fetchUserProfileDetail } from "@/app/lib/api-client";
 
 
 
@@ -143,41 +143,60 @@ function PieChart({ members, nonMembers }: { members: number; nonMembers: number
 export default function RightSidebar() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [stats, setStats] = useState<MemberStats>(MOCK_STATS);
+  const [profile, setProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // Simulate API fetch
+
   useEffect(() => {
-    // Replace these with real API calls:
-    // const res = await fetch("/api/notifications"); ...
-    // const res = await fetch("/api/member-stats"); ...
     setNotifications(MOCK_NOTIFICATIONS);
     setStats(MOCK_STATS);
+    // Fetch user profile detail
+    fetchUserProfileDetail()
+      .then((data) => {
+        console.log("User profile fetched:", data);
+        setProfile(data);
+      })
+      .catch(() => setProfile(null))
+      .finally(() => setLoadingProfile(false));
   }, []);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <div className="flex flex-col w-full h-full bg-white overflow-hidden">
-
       {/* ════════════════════════════════════════
           SECTION 1 — Organisation Card
       ════════════════════════════════════════ */}
       <div className="flex-shrink-0 px-4 py-5">
         <div className="rounded-xl p-4 bg-[#F9FAFB] flex flex-col items-center shadow-[0_0_15px_rgba(0,0,0,0.25)]">
-
           {/* Logo */}
           <div className="shadow-[0_0_15px_rgba(0,0,0,0.25)] rounded-full p-1.5 ">
-            <Image
-              src="/icons/Image.png"
-              alt="Profile Picture"
-              width={80}
-              height={80}
-              className='flex-shrink-0 object-cover rounded-full'
-            />
+            {loadingProfile ? (
+              <div className="w-[80px] h-[80px] rounded-full bg-gray-200 animate-pulse" />
+            ) : (
+              <Image
+                src={
+                  (profile?.profileImage && profile.profileImage !== "") ? profile.profileImage :
+                  (profile?.data?.profileImage && profile.data.profileImage !== "") ? profile.data.profileImage :
+                  "/icons/Image.png"
+                }
+                alt="Profile Picture"
+                width={80}
+                height={80}
+                className='flex-shrink-0 object-cover rounded-full'
+              />
+            )}
           </div>
 
           <div className="text-center leading-tight py-2">
-            <p className="text-[18px] font-semibold text-[#30B33D]">Syed Alam Mazhar</p>
+            <p className="text-[18px] font-semibold text-[#30B33D]">
+              {loadingProfile ? (
+                <span className="bg-gray-200 rounded w-24 h-5 inline-block animate-pulse" />
+              ) : (
+                profile?.name || profile?.data?.name || "-"
+              )}
+            </p>
           </div>
 
           {/* Contact mini-card */}
@@ -187,7 +206,14 @@ export default function RightSidebar() {
               <div className="bg-white p-2 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.25)]">
                 <SvgIcon name="phone-icon" size={12} className="" />
               </div>
-              <span className="text-[12px] text-black font-medium">+92 21 76566401-2</span>
+              <span className="text-[12px] text-black font-medium">
+                {loadingProfile ? (
+                  <span className="bg-gray-200 rounded w-20 h-4 inline-block animate-pulse" />
+                ) : (
+                  profile?.phoneNumber || profile?.mobileNumber || profile?.registteredMobileNumber ||
+                  profile?.data?.phoneNumber || profile?.data?.mobileNumber || profile?.data?.registteredMobileNumber || "-"
+                )}
+              </span>
             </div>
             <div className="w-full h-px bg-[#ECECEC]" />
             <div className="flex items-center gap-3  px-3 pb-2 pt-1">
@@ -195,7 +221,13 @@ export default function RightSidebar() {
               <div className="bg-white px-2 py-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.25)]">
                 <SvgIcon name="email-icon" size={12} className="" />
               </div>
-              <span className="text-[12px] text-black font-medium">syed@gmail.com</span>
+              <span className="text-[12px] text-black font-medium max-w-[140px] truncate break-all block">
+                {loadingProfile ? (
+                  <span className="bg-gray-200 rounded w-28 h-4 inline-block animate-pulse" />
+                ) : (
+                  profile?.email || profile?.registteredEmail || profile?.data?.email || profile?.data?.registteredEmail || "-"
+                )}
+              </span>
             </div>
           </div>
 
