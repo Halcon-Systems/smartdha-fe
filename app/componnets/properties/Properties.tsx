@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import WarningModal from "../shared/WarningModal";
+import SuccessModal from "../shared/SuccessModal";
 import { useRouter } from "next/navigation";
 import {
   FiChevronLeft,
@@ -7,90 +9,168 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import SvgIcon from "../shared/SvgIcon";
+import { fetchPropertyList } from "../../lib/api-client";
+import { Property } from "../../types/api";
+
+// Extend Property type to include all API response fields used in the table
+type PropertyWithSerial = Property & {
+  serialNo?: number;
+  propertyTag?: string;
+  possessionType?: string;
+  streetNo?: string;
+  plotNo?: number;
+  plot?: string;
+};
 
 /* ================= TYPES ================= */
 
-type PropertyType = {
-  id: number;
-  idSpot: string;
-  category: string;
-  type: string;
-  possessionType: string;
-  propertyTag: string;
-  date: string;
-  phase: string;
-  zone: string;
-  khayaban: string;
-  floor: string;
-};
+
 
 /* ================= COMPONENT ================= */
 
 const Properties = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<
-    "Active Properties" | "in-Active Properties"
-  >("Active Properties");
 
+  const [activeTab, setActiveTab] = useState<"Active Properties" | "in-Active Properties">("Active Properties");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [properties, setProperties] = useState<PropertyWithSerial[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  /* ================= LARGE DUMMY DATA ================= */
 
-  const dummyActiveProperties: PropertyType[] = Array.from(
-    { length: 45 },
-    (_, i) => ({
-      id: i + 1,
-      idSpot: `PROP-${(1000 + i).toString()}`,
-      category: i % 3 === 0 ? "Residential" : i % 3 === 1 ? "Commercial" : "Mixed",
-      type: i % 4 === 0 ? "House" : i % 4 === 1 ? "Apartment" : i % 4 === 2 ? "Shop" : "Office",
-      possessionType: i % 2 === 0 ? "Owned" : "Rented",
-      propertyTag: `TAG-${(5000 + i).toString()}`,
-      date: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
-      phase: i % 4 === 0 ? "Phase 1" : i % 4 === 1 ? "Phase 2" : i % 4 === 2 ? "Phase 3" : "Phase 4",
-      zone: i % 3 === 0 ? "Zone A" : i % 3 === 1 ? "Zone B" : "Zone C",
-      khayaban: i % 5 === 0 ? "Khayaban-e-Ittehad" : i % 5 === 1 ? "Khayaban-e-Jinnah" : i % 5 === 2 ? "Khayaban-e-Shahrah" : i % 5 === 3 ? "Khayaban-e-Iqbal" : "Khayaban-e-Rashid",
-      floor: i % 10 === 0 ? "Ground Floor" : i % 10 === 1 ? "First Floor" : i % 10 === 2 ? "Second Floor" : `${(i % 8) + 3}rd Floor`,
-    })
-  );
+  // Action handlers for edit/delete
+  const handleEdit = (item: PropertyWithSerial) => {
+    // Store the property ID in localStorage for the add form to pick up
+    localStorage.setItem('editPropertyData', JSON.stringify({ id: item.id }));
+    router.push('/properties/add-property');
+  };
 
-  const dummyInactiveProperties: PropertyType[] = Array.from(
-    { length: 32 },
-    (_, i) => ({
-      id: i + 1,
-      idSpot: `PROP-${(2000 + i).toString()}`,
-      category: i % 3 === 0 ? "Residential" : i % 3 === 1 ? "Commercial" : "Mixed",
-      type: i % 4 === 0 ? "House" : i % 4 === 1 ? "Apartment" : i % 4 === 2 ? "Shop" : "Office",
-      possessionType: i % 2 === 0 ? "Owned" : "Rented",
-      propertyTag: `TAG-${(6000 + i).toString()}`,
-      date: `${(i % 28) + 1}-${(i % 12) + 1}-2024`,
-      phase: i % 4 === 0 ? "Phase 1" : i % 4 === 1 ? "Phase 2" : i % 4 === 2 ? "Phase 3" : "Phase 4",
-      zone: i % 3 === 0 ? "Zone A" : i % 3 === 1 ? "Zone B" : "Zone C",
-      khayaban: i % 5 === 0 ? "Khayaban-e-Ittehad" : i % 5 === 1 ? "Khayaban-e-Jinnah" : i % 5 === 2 ? "Khayaban-e-Shahrah" : i % 5 === 3 ? "Khayaban-e-Iqbal" : "Khayaban-e-Rashid",
-      floor: i % 10 === 0 ? "Ground Floor" : i % 10 === 1 ? "First Floor" : i % 10 === 2 ? "Second Floor" : `${(i % 8) + 3}rd Floor`,
-    })
-  );
+
+  // Delete dialog state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<PropertyWithSerial | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const handleDelete = (item: PropertyWithSerial) => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('authToken') || '';
+      const authHeader = token ? `Bearer ${token}` : '';
+      const response = await fetch('https://dfpwebp.dhakarachi.org/api/smartdha/residenceproperty/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authHeader ? { Authorization: authHeader } : {}),
+        },
+        body: JSON.stringify({ id: itemToDelete.id }),
+      });
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        result = { message: text };
+      }
+        const succeeded = result.succeeded || (result.data && result.data.success);
+        if (succeeded) {
+          const msg = (result.data && result.data.message) || result.message || 'Property deleted successfully!';
+          setSuccessMessage(msg);
+          setShowSuccessModal(true);
+          // Refresh list
+          setProperties((prev) => prev.filter((p) => p.id !== itemToDelete.id));
+          setTotalRecords((prev) => Math.max(0, prev - 1));
+        } else {
+          setError(((result.data && result.data.message) || result.message || '') + ' Failed to delete property.');
+          // Optionally keep a console log for debugging, but not in UI
+          // console.error('Delete property API response:', text);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete property');
+      // eslint-disable-next-line no-console
+      console.error('Delete property error:', err);
+    } finally {
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      setLoading(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+  };
+      {/* Delete Confirmation Modal */}
+      <WarningModal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Property"
+        message={`Are you sure you want to delete property ${itemToDelete?.propertyTag || itemToDelete?.id || ''}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Delete Successful"
+        message={successMessage}
+      />
+
+  // Fetch properties from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const isActive = activeTab === "Active Properties";
+        const res = await fetchPropertyList({
+          isActive,
+          pageNumber: currentPage,
+          pageSize: rowsPerPage,
+        });
+        // API returns { data: { items: Property[], totalCount: number, ... }, ... }
+        if (Array.isArray(res.data?.items) && res.data.items.length > 0) {
+          setProperties(res.data.items);
+          setTotalRecords(res.data?.totalCount || 0);
+        } else {
+          setProperties([]);
+          setTotalRecords(0);
+        }
+      } catch (err: any) {
+        setProperties([]);
+        setTotalRecords(0);
+        setError(err.message || "Failed to fetch properties");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [activeTab, currentPage, rowsPerPage]);
+
+
 
   /* ================= PAGINATION ================= */
 
-  const activeData =
-    activeTab === "Active Properties"
-      ? dummyActiveProperties
-      : dummyInactiveProperties;
 
-  const totalPages = Math.ceil(
-    activeData.length / rowsPerPage
-  );
-
-  const startIndex =
-    (currentPage - 1) * rowsPerPage;
-
-  const endIndex = startIndex + rowsPerPage;
-
-  const paginatedData = activeData.slice(
-    startIndex,
-    endIndex
-  );
+  const totalPages = Math.ceil(totalRecords / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + properties.length;
+  const paginatedData = properties;
 
   /* ================= ROW COLOR ================= */
 
@@ -103,6 +183,31 @@ const Properties = () => {
 
   return (
     <div className="w-full">
+      {/* Delete Confirmation Modal */}
+      <WarningModal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Property"
+        message={`Are you sure you want to delete property ${itemToDelete?.propertyTag || itemToDelete?.id || ''}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Delete Successful"
+        message={successMessage}
+      />
+
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">{error}</div>
+      )}
+      {loading && (
+        <div className="text-center py-8 text-gray-500">Loading properties...</div>
+      )}
       <div className="flex justify-end mb-6">
         <button
           onClick={() => router.push("/properties/add-property")}
@@ -157,7 +262,7 @@ const Properties = () => {
                 : "In-Active Properties"}
             </h2>
             <p className="text-xs text-gray-500">
-              {activeData.length} total records
+              {totalRecords} total records
             </p>
           </div>
 
@@ -186,70 +291,65 @@ const Properties = () => {
             <thead className="bg-gray-50 text-xs">
               <tr>
                 <>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>ID/Spot</th>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '140px' }}>Category</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '100px' }}>Serial No</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Property Tag</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Category</th>
                   <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Type</th>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '150px' }}>Possession Type</th>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '140px' }}>Property Tag</th>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Date</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Possession Type</th>
                   <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Phase</th>
                   <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Zone</th>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '160px' }}>Khayaban</th>
-                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Floor</th>
-                  {/* <th className="px-4 py-3 text-center font-bold text-gray-900" style={{ width: '100px' }}>Action</th> */}
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Street No</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Plot No</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Plot</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '120px' }}>Khayaban</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-900" style={{ width: '100px' }}>Floor</th>
+                  <th className="px-4 py-3 text-center font-bold text-gray-900" style={{ width: '100px' }}>Action</th>
                 </>
               </tr>
             </thead>
 
             <tbody>
-              {paginatedData.map((item, index) => (
-                <tr
-                  key={item.id}
-                  className={`${rowStyle(index)} hover:bg-gray-50`}
-                >
-                  <td className="px-4 py-3 text-sm">
-                    {item.idSpot}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.category}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.type}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.possessionType}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.propertyTag}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.date}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.phase}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.zone}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.khayaban}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.floor}
-                  </td>
-
-                  {/* <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center gap-3">
-                      <button className="w-8 h-8 p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center">
-                        <SvgIcon name="Edit-Icon" size={14} />
-                      </button>
-                      <button className="w-8 h-8 p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center">
-                       <SvgIcon name="delete-icon" size={14} />
-                      </button>
-                    </div>
-                  </td> */}
+              {paginatedData.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan={12} className="text-center py-8 text-gray-400">No properties found.</td>
                 </tr>
-              ))}
+              ) : (
+                paginatedData.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className={`${rowStyle(index)} hover:bg-gray-50`}
+                  >
+                    <td className="px-4 py-3 text-sm">{item.serialNo ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.propertyTag ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.category ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.type ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.possessionType ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.phase ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.zone ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.streetNo ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.plotNo ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.plot ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.khayaban ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{item.floor ?? "-"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex justify-center gap-3">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="w-8 h-8 p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center"
+                        >
+                          <SvgIcon name="Edit-Icon" size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="w-8 h-8 p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center"
+                        >
+                          <SvgIcon name="delete-icon" size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -257,9 +357,7 @@ const Properties = () => {
         {/* ================= GREEN PAGINATION ================= */}
         <div className="px-4 py-3 border-t flex justify-between items-center">
           <div className="text-xs text-gray-600">
-            Showing {startIndex + 1} to{" "}
-            {Math.min(endIndex, activeData.length)} of{" "}
-            {activeData.length}
+            Showing {totalRecords === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalRecords)} of {totalRecords}
           </div>
 
           <div className="flex items-center gap-2">

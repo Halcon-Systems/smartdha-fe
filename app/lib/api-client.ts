@@ -1,3 +1,24 @@
+// Fetch user profile detail
+export async function fetchUserProfileDetail() {
+  let headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("authToken") || localStorage.getItem("accessToken") || "";
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  const response = await fetch(
+    "https://dfpwebp.dhakarachi.org/api/smartdha/user/GetProfileDetail",
+    {
+      method: "GET",
+      headers,
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch user profile detail");
+  }
+  return response.json();
+}
 // Fetch non-member verification list for Visitor tab with pagination (no total count from backend)
 export async function fetchNonMemberVerificationList({
   memberType = "Visitor",
@@ -55,13 +76,36 @@ export async function fetchPropertyList({ isActive, pageNumber, pageSize }: { is
       headers["Authorization"] = `Bearer ${token}`;
     }
   }
+  const body = JSON.stringify({ isActive, pageNumber, pageSize: effectivePageSize });
   const response = await fetch("https://dfpwebp.dhakarachi.org/api/smartdha/residenceproperty/get-all-properties", {
     method: "POST",
     headers,
-    body: JSON.stringify({ isActive, pageNumber, pageSize: effectivePageSize }),
+    body,
   });
   if (!response.ok) {
-    throw new Error("Failed to fetch property list");
+    let errorText = await response.text();
+    let errorJson: any = null;
+    let errorMessage = `Failed to fetch property list: ${response.status} ${response.statusText}`;
+    try {
+      errorJson = JSON.parse(errorText);
+      if (errorJson && typeof errorJson === 'object' && errorJson.message) {
+        errorMessage = errorJson.message;
+      }
+    } catch {
+      if (errorText) {
+        errorMessage = errorText;
+      }
+    }
+    // Log details for debugging
+    console.error("Property list API error:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+      sentBody: body,
+      headers,
+      error: errorJson || errorText,
+    });
+    throw new Error(errorMessage);
   }
   return response.json();
 }
