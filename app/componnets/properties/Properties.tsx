@@ -179,6 +179,13 @@ const Properties = () => {
       ? "bg-[#F4FFF1]"
       : "bg-white";
 
+
+  // Helper to show '-' for null/undefined or 0 if API returns null
+  const displayValue = (value: any) => {
+    if (value === null || value === undefined || value==0) return "-";
+    return value;
+  };
+
   /* ================= RENDER ================= */
 
   return (
@@ -319,18 +326,18 @@ const Properties = () => {
                     key={item.id}
                     className={`${rowStyle(index)} hover:bg-gray-50`}
                   >
-                    <td className="px-4 py-3 text-sm">{item.serialNo ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.propertyTag ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.category ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.type ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.possessionType ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.phase ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.zone ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.streetNo ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.plotNo ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.plot ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.khayaban ?? "-"}</td>
-                    <td className="px-4 py-3 text-sm">{item.floor ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.serialNo)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.propertyTag)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.category)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.type)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.possessionType)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.phase)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.zone)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.streetNo)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.plotNo)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.plot)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.khayaban)}</td>
+                    <td className="px-4 py-3 text-sm">{displayValue(item.floor)}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-3">
                         <button

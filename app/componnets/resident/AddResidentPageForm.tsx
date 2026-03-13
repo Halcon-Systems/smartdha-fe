@@ -26,6 +26,8 @@ type FormData = {
   plotNoNumeric: string;
   plotNoAlphabetic: string;
   plotNoAlphaNumeric: string;
+  destination: string;
+  vehicleInfo: string;
   profilePicture: File | null;
   proofOfPossession: File | null;
   utilityBill: File | null;
@@ -66,6 +68,8 @@ const AddResidentPageForm: React.FC<{
     plotNoNumeric: "",
     plotNoAlphabetic: "",
     plotNoAlphaNumeric: "",
+    destination: "",
+    vehicleInfo: "",
     profilePicture: null,
     proofOfPossession: null,
     utilityBill: null,
@@ -143,6 +147,8 @@ const AddResidentPageForm: React.FC<{
                       plotNoNumeric: member.plotNoNumeric ?? member.plotNo ?? prev.plotNoNumeric,
                       plotNoAlphabetic: member.plotNoAlphabetic ?? prev.plotNoAlphabetic,
                       plotNoAlphaNumeric: member.plotNoAlphaNumeric ?? prev.plotNoAlphaNumeric,
+                      destination: member.destination ?? prev.destination,
+                      vehicleInfo: member.vehicleInfo ?? prev.vehicleInfo,
                       cnic: member.cnic ?? prev.cnic,
                     }));
                     setPrefilled(true);
@@ -165,6 +171,8 @@ const AddResidentPageForm: React.FC<{
                 plotNoNumeric: member.plotNoNumeric ?? member.plotNo ?? prev.plotNoNumeric,
                 plotNoAlphabetic: member.plotNoAlphabetic ?? prev.plotNoAlphabetic,
                 plotNoAlphaNumeric: member.plotNoAlphaNumeric ?? prev.plotNoAlphaNumeric,
+                destination: member.destination ?? prev.destination,
+                vehicleInfo: member.vehicleInfo ?? prev.vehicleInfo,
                 cnic: member.cnic ?? prev.cnic,
               }));
               setPrefilled(true);
@@ -299,6 +307,8 @@ const AddResidentPageForm: React.FC<{
       if (formData.proofOfPossession) fd.append("ProofOfPossession", formData.proofOfPossession);
       if (formData.utilityBill) fd.append("UtilityBill", formData.utilityBill);
       fd.append("CNIC", formData.cnic);
+      fd.append("destination", formData.destination);
+      fd.append("vehicleInfo", formData.vehicleInfo);
 
       // If editing, add Id from localStorage
       let isEdit = false;
@@ -336,7 +346,9 @@ const AddResidentPageForm: React.FC<{
         ["PlotNoAlphabetic", formData.plotNoAlphabetic],
         ["PlotNoAlphaNumeric", formData.plotNoAlphaNumeric],
         ["CNIC", formData.cnic],
-        ["Id", isEdit && editData ? String(JSON.parse(editData).id) : ""],
+          ["destination", formData.destination],
+          ["vehicleInfo", formData.vehicleInfo],
+          ["Id", isEdit && editData ? String(JSON.parse(editData).id) : ""],
       ];
       fields.forEach(([key, value]) => {
         if (value) curl += ` \\\n  -F \"${key}=${value}\"`;
@@ -633,7 +645,7 @@ const AddResidentPageForm: React.FC<{
             </FieldBox>
           </div>
 
-          {/* Row 7: Floor + Plot Numbers */}
+          {/* Row 7: Floor + Plot Numbers + Destination + Vehicle Info */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <FieldBox>
               <FieldLabel text="Floor" required />
@@ -650,6 +662,16 @@ const AddResidentPageForm: React.FC<{
             <FieldBox>
               <FieldLabel text="Plot No. (AlphaNumeric)" />
               <TextInput name="plotNoAlphaNumeric" value={formData.plotNoAlphaNumeric} placeholder="55-C" />
+            </FieldBox>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <FieldBox>
+              <FieldLabel text="Destination" />
+              <TextInput name="destination" value={formData.destination} placeholder="Enter destination" />
+            </FieldBox>
+            <FieldBox>
+              <FieldLabel text="Vehicle Info" />
+              <TextInput name="vehicleInfo" value={formData.vehicleInfo} placeholder="Enter vehicle info" />
             </FieldBox>
           </div>
 
