@@ -26,6 +26,8 @@ type FormData = {
   plotNoNumeric: string;
   plotNoAlphabetic: string;
   plotNoAlphaNumeric: string;
+  destination: string;
+  vehicleInfo: string;
   profilePicture: File | null;
   proofOfPossession: File | null;
   utilityBill: File | null;
@@ -66,6 +68,8 @@ const AddResidentPageForm: React.FC<{
     plotNoNumeric: "",
     plotNoAlphabetic: "",
     plotNoAlphaNumeric: "",
+    destination: "",
+    vehicleInfo: "",
     profilePicture: null,
     proofOfPossession: null,
     utilityBill: null,
@@ -103,79 +107,28 @@ const AddResidentPageForm: React.FC<{
     const editData = localStorage.getItem("editResidentData");
     if (!editData || categories.length === 0) return;
     try {
-      const parsed = JSON.parse(editData);
-      if (parsed && parsed.id) {
-        setIsEditing(true);
-        fetchMemberById(parsed.id)
-          .then((member) => {
-            // Map category, phase, and zone to UUIDs
-            const categoryObj = categories.find(cat => cat.label === member.category);
-            const categoryId = categoryObj ? categoryObj.uuid : "";
-            const phaseObj = phases.find(ph => ph.label === member.phase);
-            const phaseId = phaseObj ? phaseObj.uuid : "";
-            const zoneObj = zones.find(z => z.label === member.zone);
-            const zoneId = zoneObj ? zoneObj.uuid : "";
+      const parsed = JSON.parse(editData) as Partial<FormData>;
+      setIsEditing(true);
+      setFormData((prev) => ({
+        ...prev,
+        fullName: parsed.fullName ?? prev.fullName,
+        emailAddress: parsed.emailAddress ?? prev.emailAddress,
+        cellNumber: parsed.cellNumber ?? prev.cellNumber,
+        category: parsed.category ?? prev.category,
+        subCategory: parsed.subCategory ?? prev.subCategory,
+        phase: parsed.phase ?? prev.phase,
+        zone: parsed.zone ?? prev.zone,
+        khayaban: parsed.khayaban ?? prev.khayaban,
+        laneStreetNo: parsed.laneStreetNo ?? prev.laneStreetNo,
+        floor: parsed.floor ?? prev.floor,
+        plotNoNumeric: parsed.plotNoNumeric ?? prev.plotNoNumeric,
+        plotNoAlphabetic: parsed.plotNoAlphabetic ?? prev.plotNoAlphabetic,
+        plotNoAlphaNumeric: parsed.plotNoAlphaNumeric ?? prev.plotNoAlphaNumeric,
+        cnic: parsed.cnic ?? prev.cnic,
+      }));
 
-            // Fetch subcategories for this category, then set subCategory
-            if (categoryId) {
-              import("@/app/lib/api-client").then(({ apiClient }) => {
-                apiClient.get(`/api/nonmember/get-nonmember-subcategory-bycategoryid?Id=${categoryId}`)
-                  .then((subRes) => {
-                    const arr = Array.isArray(subRes) ? subRes : (subRes as any[]);
-                    const mappedSubs = arr.map((item: any) => ({
-                      label: item.displayName || item.name,
-                      uuid: item.id,
-                    }));
-                    setSubCategories(mappedSubs);
-                    const subCatObj = mappedSubs.find((sub) => sub.label === member.subcategory);
-                    setFormData((prev) => ({
-                      ...prev,
-                      fullName: member.name ?? prev.fullName,
-                      emailAddress: member.email ?? prev.emailAddress,
-                      cellNumber: member.phone ?? prev.cellNumber,
-                      category: categoryId,
-                      subCategory: subCatObj ? subCatObj.uuid : "",
-                      phase: phaseId || member.phase || prev.phase,
-                      zone: zoneId || member.zone || prev.zone,
-                      khayaban: member.khayaban ?? prev.khayaban,
-                      laneStreetNo: member.laneStreetNo ?? member.laneNo ?? prev.laneStreetNo,
-                      floor: member.floor ?? prev.floor,
-                      plotNoNumeric: member.plotNoNumeric ?? member.plotNo ?? prev.plotNoNumeric,
-                      plotNoAlphabetic: member.plotNoAlphabetic ?? prev.plotNoAlphabetic,
-                      plotNoAlphaNumeric: member.plotNoAlphaNumeric ?? prev.plotNoAlphaNumeric,
-                      cnic: member.cnic ?? prev.cnic,
-                    }));
-                    setPrefilled(true);
-                  });
-              });
-            } else {
-              // fallback: just prefill with names if UUID not found
-              setFormData((prev) => ({
-                ...prev,
-                fullName: member.name ?? prev.fullName,
-                emailAddress: member.email ?? prev.emailAddress,
-                cellNumber: member.phone ?? prev.cellNumber,
-                category: member.category ?? prev.category,
-                subCategory: member.subcategory ?? prev.subCategory,
-                phase: phaseId || member.phase || prev.phase,
-                zone: zoneId || member.zone || prev.zone,
-                khayaban: member.khayaban ?? prev.khayaban,
-                laneStreetNo: member.laneStreetNo ?? member.laneNo ?? prev.laneStreetNo,
-                floor: member.floor ?? prev.floor,
-                plotNoNumeric: member.plotNoNumeric ?? member.plotNo ?? prev.plotNoNumeric,
-                plotNoAlphabetic: member.plotNoAlphabetic ?? prev.plotNoAlphabetic,
-                plotNoAlphaNumeric: member.plotNoAlphaNumeric ?? prev.plotNoAlphaNumeric,
-                cnic: member.cnic ?? prev.cnic,
-              }));
-              setPrefilled(true);
-            }
-            const selectedTab: Tab = member.category?.toLowerCase() === "commercial" ? "commercial" : "resident";
-            setActiveTab(selectedTab);
-          })
-          .catch((error) => {
-            console.error("Failed to fetch member by id:", error);
-          });
-      }
+      const selectedTab: Tab = parsed.category?.toLowerCase() === "commercial" ? "commercial" : "resident";
+      setActiveTab(selectedTab);
     } catch (error) {
       console.error("Error parsing resident edit data:", error);
     }
@@ -300,24 +253,6 @@ const AddResidentPageForm: React.FC<{
       if (formData.utilityBill) fd.append("UtilityBill", formData.utilityBill);
       fd.append("CNIC", formData.cnic);
 
-      // If editing, add Id from localStorage
-      let isEdit = false;
-      const editData = localStorage.getItem("editResidentData");
-      if (editData) {
-        const parsed = JSON.parse(editData);
-        if (parsed && parsed.id) {
-          fd.append("Id", parsed.id);
-          isEdit = true;
-        }
-      }
-
-      // Debug: Extract FormData key-values for UI display
-      const debugObj: Record<string, any> = {};
-      fd.forEach((value, key) => {
-        debugObj[key] = value instanceof File ? value.name : value;
-      });
-      setFormDataDebug(debugObj);
-
       // Generate cURL command
       let curl = `curl -X POST https://dfpwebp.dhakarachi.org/api/smartdha/nonmemberregistration/${isEdit ? "update-member-type" : "register-nonmember"} \\\n  -H "Content-Type: multipart/form-data"`;
       const fields = [
@@ -336,7 +271,6 @@ const AddResidentPageForm: React.FC<{
         ["PlotNoAlphabetic", formData.plotNoAlphabetic],
         ["PlotNoAlphaNumeric", formData.plotNoAlphaNumeric],
         ["CNIC", formData.cnic],
-        ["Id", isEdit && editData ? String(JSON.parse(editData).id) : ""],
       ];
       fields.forEach(([key, value]) => {
         if (value) curl += ` \\\n  -F \"${key}=${value}\"`;
@@ -631,14 +565,8 @@ const AddResidentPageForm: React.FC<{
               <FieldLabel text="Lane/Street No." required />
               <TextInput name="laneStreetNo" value={formData.laneStreetNo} placeholder="Type here" required />
             </FieldBox>
-          </div>
-
-          {/* Row 7: Floor + Plot Numbers */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <FieldBox>
-              <FieldLabel text="Floor" required />
-              <TextInput name="floor" value={formData.floor} placeholder="2-Digits Only" />
-            </FieldBox>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <FieldBox>
               <FieldLabel text="Plot No. (Numeric)" required />
               <TextInput name="plotNoNumeric" value={formData.plotNoNumeric} placeholder="123 Only" required />
@@ -651,6 +579,7 @@ const AddResidentPageForm: React.FC<{
               <FieldLabel text="Plot No. (AlphaNumeric)" />
               <TextInput name="plotNoAlphaNumeric" value={formData.plotNoAlphaNumeric} placeholder="55-C" />
             </FieldBox>
+           </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
