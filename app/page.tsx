@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import {
@@ -46,6 +47,8 @@ export default function Page() {
       icon: "/icons/logo6.svg",
     },
   ];
+
+  const [activeTab, setActiveTab] = React.useState(1);
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col scroll-smooth ">
@@ -282,10 +285,18 @@ export default function Page() {
                     "-10px -10px 20px 0px #FFFFFF99, 3px 3px 20px 0px #AAAACC80",
                 }}
               >
-                <button className="flex items-center justify-center px-2 py-2 bg-[#30B33D] text-white rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap">
+                <button 
+                  className="flex items-center justify-center px-2 py-2 rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap " 
+                  onClick={() => setActiveTab(1)}
+                  style={activeTab === 1 ? { backgroundColor: "#30B33D", color: "#fff" } : {}}
+                >
                   About Smart DHA
                 </button>
-                <button className="flex items-center justify-center px-2 py-2 bg-white text-[#30B33D] rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap">
+                <button 
+                  className="flex items-center justify-center px-2 py-2 rounded-[6px] font-normal text-xs shadow w-[180px] h-[50px] whitespace-nowrap"
+                  onClick={() => setActiveTab(2)}
+                  style={activeTab === 2 ? { backgroundColor: "#30B33D", color: "#fff" } : {}}
+                >
                   Administrator Message
                 </button>
               </div>
@@ -293,7 +304,15 @@ export default function Page() {
                 Lorem ipsum dolor sit amet{" "}
                 <span className="text-green-500">consectetur.</span>
               </h2>
-              <p className="text-gray-500 mb-6 text-2xl max-w-[800px]">
+              {activeTab === 2 && (
+                <p className="text-gray-500 mb-6 text-2xl max-w-[800px]">
+                  Lorem ipsum dolor sit amet consectetur. Nibh vitae mauris a
+                  lacus cursus. Proin odio turpis vel sed gravida proin elementum
+                  pharetra. Faucibus interdum luctus pulvinar sed maecenas sapien.
+                </p>
+              )}
+              {activeTab === 1 && (
+                <p className="text-gray-500 mb-6 text-2xl max-w-[800px]">
                 Lorem ipsum dolor sit amet consectetur. Nibh vitae mauris a
                 lacus cursus. Proin odio turpis vel sed gravida proin elementum
                 pharetra. Faucibus interdum luctus pulvinar sed maecenas sapien.
@@ -301,6 +320,7 @@ export default function Page() {
                 nisl nam diam. At consequat volutpat phasellus non pellentesque
                 cum ante quam.
               </p>
+              )}
               <p className="text-gray-500 text-2xl max-w-[800px]">
                 Vel aliquam amet non cursus sit nec. Quam faucibus enim interdum
                 nisl nam diam. At consequat volutpat phasellus non pellentesque
