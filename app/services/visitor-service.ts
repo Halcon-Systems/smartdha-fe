@@ -165,7 +165,7 @@ export class VisitorService {
 
 // Export singleton instance
 export const visitorService = new VisitorService();
-=======
+
 import { API_CONFIG, API_ENDPOINTS } from '../lib/api-config';
 import { authService } from './auth-service';
 import type { VisitorPass } from '../types/api';
